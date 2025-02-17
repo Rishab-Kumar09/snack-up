@@ -11,21 +11,44 @@ const Navbar = () => {
     navigate('/');
   };
 
+  const getNavLinks = () => {
+    if (!user) {
+      return (
+        <Link to="/login" className="nav-link">Login</Link>
+      );
+    }
+
+    if (user.isSuperAdmin) {
+      return (
+        <>
+          <Link to="/superadmin" className="nav-link">Super Admin Dashboard</Link>
+          <button onClick={handleLogout} className="nav-link btn-link">Logout</button>
+        </>
+      );
+    }
+
+    if (user.isAdmin) {
+      return (
+        <>
+          <Link to="/admin" className="nav-link">Admin Dashboard</Link>
+          <button onClick={handleLogout} className="nav-link btn-link">Logout</button>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <Link to="/dashboard" className="nav-link">Dashboard</Link>
+        <button onClick={handleLogout} className="nav-link btn-link">Logout</button>
+      </>
+    );
+  };
+
   return (
     <nav className="navbar">
       <Link to="/" className="navbar-brand">SnackUp</Link>
       <div className="navbar-links">
-        {user ? (
-          <>
-            <Link to="/dashboard" className="nav-link">Dashboard</Link>
-            {user.isAdmin && <Link to="/admin" className="nav-link">Admin</Link>}
-            <button onClick={handleLogout} className="nav-link btn-link">Logout</button>
-          </>
-        ) : (
-          <>
-            <Link to="/login" className="nav-link">Login</Link>
-          </>
-        )}
+        {getNavLinks()}
       </div>
     </nav>
   );

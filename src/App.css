@@ -1,10 +1,16 @@
 :root {
   --primary-color: #4a90e2;
+  --primary-color-dark: #357abd;
   --secondary-color: #f5f5f5;
   --text-color: #333;
   --border-color: #ddd;
   --success-color: #28a745;
   --error-color: #dc3545;
+  --warning-color: #ffc107;
+  --info-color: #17a2b8;
+  --background-primary: white;
+  --background-secondary: #f8f9fa;
+  --text-secondary: #666;
 }
 
 * {

@@ -49,8 +49,8 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const endpoint = isLoginMode ? 'login' : 'register';
-      const response = await fetch(`${config.apiBaseUrl}/${endpoint}`, {
+      const endpoint = isLoginMode ? config.authEndpoints.login : config.authEndpoints.register;
+      const response = await fetch(`${config.apiBaseUrl}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,7 +62,9 @@ const Login = () => {
 
       if (response.ok) {
         localStorage.setItem('user', JSON.stringify(data.user));
-        if (data.user.isAdmin) {
+        if (data.user.isSuperAdmin) {
+          navigate('/superadmin');
+        } else if (data.user.isAdmin) {
           navigate('/admin');
         } else {
           navigate('/dashboard');

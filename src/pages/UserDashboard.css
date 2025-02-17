@@ -68,6 +68,60 @@ h2 {
   color: var(--text-color);
 }
 
+.snack-preferences {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.rating-container,
+.quantity-container {
+  margin-bottom: 0.5rem;
+}
+
+.rating-container label,
+.quantity-container label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.rating-stars {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.star-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #ddd;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.star-button:hover,
+.star-button.active {
+  color: #ffd700;
+}
+
+.quantity-input {
+  width: 80px;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
 @media (max-width: 768px) {
   .dashboard-container {
     padding: 1rem;

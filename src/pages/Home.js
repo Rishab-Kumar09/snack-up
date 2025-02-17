@@ -30,24 +30,6 @@ const Home = () => {
           </div>
         </div>
       </section>
-
-      <section className="popular-snacks">
-        <h2>Popular Snacks</h2>
-        <div className="snacks-preview">
-          <div className="snack-preview-card">
-            <h3>Mixed Nuts</h3>
-            <p>A healthy mix of almonds, cashews, and walnuts</p>
-          </div>
-          <div className="snack-preview-card">
-            <h3>Dark Chocolate</h3>
-            <p>72% cocoa dark chocolate bar</p>
-          </div>
-          <div className="snack-preview-card">
-            <h3>Trail Mix</h3>
-            <p>Energy-packed mix of nuts, dried fruits, and chocolate</p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 };

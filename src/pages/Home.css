@@ -59,7 +59,6 @@
 }
 
 .features-section {
-  margin-bottom: 4rem;
   padding: 2rem;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-radius: 12px;
@@ -103,51 +102,6 @@
   line-height: 1.6;
 }
 
-.popular-snacks {
-  margin-bottom: 4rem;
-  padding: 2rem;
-  background: linear-gradient(135deg, #fff5f5 0%, #fff0f0 100%);
-  border-radius: 12px;
-}
-
-.popular-snacks h2 {
-  text-align: center;
-  margin-bottom: 3rem;
-  color: var(--text-color);
-  font-size: 2.2rem;
-}
-
-.snacks-preview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
-}
-
-.snack-preview-card {
-  padding: 2rem;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  text-align: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.snack-preview-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-}
-
-.snack-preview-card h3 {
-  color: var(--primary-color);
-  margin-bottom: 1rem;
-  font-size: 1.4rem;
-}
-
-.snack-preview-card p {
-  color: #666;
-  line-height: 1.6;
-}
-
 @media (max-width: 768px) {
   .hero-section {
     padding: 4rem 1rem;
@@ -165,13 +119,11 @@
     padding: 1rem;
   }
 
-  .features-section,
-  .popular-snacks {
+  .features-section {
     padding: 1.5rem;
   }
 
-  .features-section h2,
-  .popular-snacks h2 {
+  .features-section h2 {
     font-size: 1.8rem;
     margin-bottom: 2rem;
   }

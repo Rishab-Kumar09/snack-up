@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Navbar from './components/common/Navbar';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import './App.css';
@@ -15,6 +16,16 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
+  // Redirect super admin to their dashboard
+  if (user.isSuperAdmin) {
+    return <Navigate to="/superadmin" replace />;
+  }
+
+  // Redirect admin to their dashboard
+  if (user.isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+
   return children;
 };
 
@@ -22,7 +33,23 @@ const ProtectedRoute = ({ children }) => {
 const AdminRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem('user'));
   
-  if (!user || !user.isAdmin) {
+  if (!user || (!user.isAdmin && !user.isSuperAdmin)) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Redirect super admin to their dashboard
+  if (user.isSuperAdmin) {
+    return <Navigate to="/superadmin" replace />;
+  }
+
+  return children;
+};
+
+// Super Admin Route Component
+const SuperAdminRoute = ({ children }) => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  
+  if (!user || !user.isSuperAdmin) {
     return <Navigate to="/login" replace />;
   }
 
@@ -52,6 +79,14 @@ function App() {
                 <AdminRoute>
                   <AdminDashboard />
                 </AdminRoute>
+              } 
+            />
+            <Route 
+              path="/superadmin" 
+              element={
+                <SuperAdminRoute>
+                  <SuperAdminDashboard />
+                </SuperAdminRoute>
               } 
             />
           </Routes>
