@@ -52,12 +52,16 @@ router.post('/', async (req, res) => {
   const { userId, snackId, rating, dailyQuantity } = req.body;
   const db = await getDatabase();
 
-  if (!userId || !snackId || !rating || !dailyQuantity) {
-    return res.status(400).json({ error: 'All fields are required' });
+  if (!userId || !snackId || typeof rating !== 'number' || typeof dailyQuantity !== 'number') {
+    return res.status(400).json({ error: 'All fields are required and must be numbers' });
   }
 
-  if (rating < 1 || rating > 5) {
-    return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+  if (rating < 0 || rating > 5) {
+    return res.status(400).json({ error: 'Rating must be between 0 and 5' });
+  }
+
+  if (dailyQuantity < 0) {
+    return res.status(400).json({ error: 'Daily quantity cannot be negative' });
   }
 
   db.run(

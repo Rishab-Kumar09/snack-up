@@ -11,8 +11,14 @@ const nonVegIngredients = [
   'meat', 'beef', 'chicken', 'pork', 'fish', 'egg', 'eggs', 'gelatin'
 ];
 
+const nonVeganIngredients = [
+  ...dairyIngredients,
+  ...nonVegIngredients,
+  'honey'
+];
+
 const classifySnack = (ingredients) => {
-  if (!ingredients) return { isDairyFree: true, isVegetarian: true };
+  if (!ingredients) return { isDairyFree: true, isVegetarian: true, isVegan: true };
   
   const ingredientsList = ingredients.toLowerCase().split(',').map(i => i.trim());
   
@@ -24,7 +30,11 @@ const classifySnack = (ingredients) => {
     nonVegIngredients.some(nonVeg => ingredient.includes(nonVeg))
   );
   
-  return { isDairyFree, isVegetarian };
+  const isVegan = !ingredientsList.some(ingredient =>
+    nonVeganIngredients.some(nonVegan => ingredient.includes(nonVegan))
+  );
+  
+  return { isDairyFree, isVegetarian, isVegan };
 };
 
 // Get all snacks
@@ -139,6 +149,52 @@ router.put('/:id/availability', async (req, res) => {
       res.json({ message: 'Snack availability updated successfully' });
     }
   );
+});
+
+// Add new endpoint for updating snack details
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, ingredients } = req.body;
+  const db = await getDatabase();
+
+  if (!name || !description || !price || !ingredients) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  // Convert price to a decimal number
+  const numericPrice = parseFloat(price);
+  if (isNaN(numericPrice) || numericPrice < 0) {
+    return res.status(400).json({ error: 'Price must be a valid positive number' });
+  }
+
+  try {
+    db.run(
+      'UPDATE snacks SET name = ?, description = ?, price = ?, ingredients = ? WHERE id = ?',
+      [name, description, numericPrice, ingredients, id],
+      function(err) {
+        if (err) {
+          console.error('Error updating snack:', err);
+          return res.status(500).json({ error: 'Failed to update snack' });
+        }
+
+        if (this.changes === 0) {
+          return res.status(404).json({ error: 'Snack not found' });
+        }
+
+        res.json({
+          id: parseInt(id),
+          name,
+          description,
+          price: numericPrice,
+          ingredients,
+          ...classifySnack(ingredients)
+        });
+      }
+    );
+  } catch (err) {
+    console.error('Error in snack update:', err);
+    res.status(500).json({ error: 'An unexpected error occurred while updating the snack' });
+  }
 });
 
 module.exports = router; 

@@ -11,6 +11,9 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('inventory');
   const [weeklyQuantities, setWeeklyQuantities] = useState({});
   const [dayMultiplier, setDayMultiplier] = useState(7);
+  const [selectedSnack, setSelectedSnack] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editedSnack, setEditedSnack] = useState(null);
   const [newSnack, setNewSnack] = useState({
     name: '',
     description: '',
@@ -26,25 +29,25 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [snacksResponse, ordersResponse, preferencesResponse] = await Promise.all([
+      const [snacksResponse, preferencesResponse, ordersResponse] = await Promise.all([
         fetch(`${config.apiBaseUrl}/snacks`),
-        fetch(`${config.apiBaseUrl}/orders`),
-        fetch(`${config.apiBaseUrl}/preferences/company/${user.companyId}`)
+        fetch(`${config.apiBaseUrl}/preferences/company/${user.companyId}`),
+        fetch(`${config.apiBaseUrl}/orders/company/${user.companyId}`)
       ]);
 
       if (!snacksResponse.ok) throw new Error('Failed to fetch snacks');
-      if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
       if (!preferencesResponse.ok) throw new Error('Failed to fetch preferences');
+      if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
 
-      const [snacksData, ordersData, preferencesData] = await Promise.all([
+      const [snacksData, preferencesData, ordersData] = await Promise.all([
         snacksResponse.json(),
-        ordersResponse.json(),
-        preferencesResponse.json()
+        preferencesResponse.json(),
+        ordersResponse.json()
       ]);
 
       setSnacks(snacksData);
-      setOrders(ordersData);
       setPreferences(preferencesData);
+      setOrders(ordersData);
 
       // Calculate initial quantities
       const initialWeeklyQuantities = {};
@@ -142,6 +145,126 @@ const AdminDashboard = () => {
     setWeeklyQuantities(updatedQuantities);
   };
 
+  const renderDietaryBadges = (snack) => {
+    return (
+      <div className="dietary-badges">
+        {snack.isVegan && (
+          <span className="badge badge-vegan" title="Contains no animal products including dairy, eggs, honey, or gelatin">
+            Vegan
+          </span>
+        )}
+        {!snack.isVegan && snack.isVegetarian && (
+          <span className="badge badge-veg" title="Contains no meat but may contain dairy, eggs, or honey">
+            Vegetarian
+          </span>
+        )}
+        {!snack.isVegetarian && (
+          <span className="badge badge-non-veg" title="Contains meat, fish, or gelatin">
+            Non-Vegetarian
+          </span>
+        )}
+        {!snack.isVegan && snack.isDairyFree && (
+          <span className="badge badge-dairy-free" title="Contains no milk products but may contain eggs, honey, or other animal products">
+            Dairy Free
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const handleSnackClick = (snack) => {
+    setSelectedSnack(snack);
+  };
+
+  const closeModal = () => {
+    setSelectedSnack(null);
+  };
+
+  const handleEditClick = (snack, e) => {
+    e.stopPropagation();
+    setEditMode(true);
+    setEditedSnack({
+      id: snack.id,
+      name: snack.name,
+      description: snack.description,
+      price: snack.price,
+      ingredients: snack.ingredients
+    });
+    setSelectedSnack(snack);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/snacks/${editedSnack.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editedSnack),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update snack');
+      }
+
+      // Refresh the snacks list
+      fetchData();
+      setEditMode(false);
+      setEditedSnack(null);
+      setSelectedSnack(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditedSnack(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePlaceWeeklyOrder = async () => {
+    try {
+      // Create order items from weekly quantities
+      const orderItems = snacks
+        .filter(snack => weeklyQuantities[snack.id] > 0)
+        .map(snack => ({
+          snackId: snack.id,
+          quantity: weeklyQuantities[snack.id]
+        }));
+
+      if (orderItems.length === 0) {
+        setError('Please add quantities for at least one snack');
+        return;
+      }
+
+      const response = await fetch(`${config.apiBaseUrl}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          items: orderItems
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      // Refresh orders data
+      fetchData();
+      setActiveTab('orders');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="alert alert-error">{error}</div>;
 
@@ -171,6 +294,12 @@ const AdminDashboard = () => {
           onClick={() => setActiveTab('orders')}
         >
           Orders
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analytics')}
+        >
+          Analytics
         </button>
         <button 
           className={`tab-button ${activeTab === 'weekly-order' ? 'active' : ''}`}
@@ -226,15 +355,19 @@ const AdminDashboard = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="ingredients">Ingredients</label>
+                <label htmlFor="ingredients">Ingredients (comma-separated)</label>
                 <textarea
                   id="ingredients"
                   name="ingredients"
                   value={newSnack.ingredients}
                   onChange={handleInputChange}
                   className="form-control"
+                  placeholder="Enter ingredients separated by commas"
                   required
                 />
+                <small className="form-text">
+                  List all ingredients to automatically categorize as vegetarian and dairy-free
+                </small>
               </div>
 
               <button type="submit" className="btn btn-primary">
@@ -255,8 +388,14 @@ const AdminDashboard = () => {
 
                 return (
                   <div key={snack.id} className="inventory-card">
-                    <h3>{snack.name}</h3>
+                    <div className="inventory-header">
+                      <h3>{snack.name}</h3>
+                      <button className="btn btn-secondary btn-sm" onClick={(e) => handleEditClick(snack, e)}>
+                        Edit
+                      </button>
+                    </div>
                     <p className="inventory-description">{snack.description}</p>
+                    {renderDietaryBadges(snack)}
                     <div className="inventory-details">
                       <span className="price">${snack.price}</span>
                       <span className="rating">★ {averageRating}</span>
@@ -285,51 +424,164 @@ const AdminDashboard = () => {
           <h2>Order Management</h2>
           <div className="orders-grid">
             {orders.map(order => (
-              <div key={order.id} className="order-card">
+              <div key={order.order_id} className="order-card">
                 <div className="order-header">
-                  <h3>Order #{order.id}</h3>
-                  <span 
-                    className="status-badge"
-                    style={{ backgroundColor: getStatusColor(order.status) }}
-                  >
-                    {order.status.replace('_', ' ')}
+                  <h3>Order #{order.order_id}</h3>
+                  <span className="status-badge" style={{ backgroundColor: getStatusColor(order.status) }}>
+                    {order.status}
                   </span>
                 </div>
-                
                 <div className="order-details">
-                  <p><strong>Customer:</strong> {order.user_name}</p>
-                  <p><strong>Company:</strong> {order.company_name}</p>
-                  <p><strong>Date:</strong> {new Date(order.created_at).toLocaleString()}</p>
-                  <p><strong>Total Cost:</strong> ${order.total_cost}</p>
+                  <p>Ordered by: {order.user_name}</p>
+                  <p>Email: {order.user_email}</p>
+                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
                 </div>
-
                 <div className="order-items">
-                  <h4>Items:</h4>
+                  <h4>Items</h4>
                   <ul>
                     {order.items.map((item, index) => (
                       <li key={index}>
-                        {item.quantity}x {item.name} (${item.price_per_unit} each)
+                        {item.quantity}x {item.snack_name} (${item.price} each)
                       </li>
                     ))}
                   </ul>
                 </div>
-
                 <div className="order-actions">
                   <select
-                    value={order.status}
-                    onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
                     className="status-select"
+                    value={order.status}
+                    onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
                   >
                     <option value="pending">Pending</option>
-                    <option value="out_of_stock">Out of Stock</option>
                     <option value="processing">Processing</option>
-                    <option value="in_delivery">In Delivery</option>
+                    <option value="out_for_delivery">Out for Delivery</option>
                     <option value="delivered">Delivered</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+      ) : activeTab === 'analytics' ? (
+        <section className="analytics-section">
+          <h2>Snack Analytics</h2>
+          <div className="analytics-grid">
+            <div className="analytics-card">
+              <h3>Top Rated Snacks</h3>
+              <div className="analytics-content">
+                {snacks.map(snack => {
+                  const snackPreferences = preferences.filter(p => p.snack_id === snack.id);
+                  const averageRating = snackPreferences.length > 0
+                    ? (snackPreferences.reduce((sum, p) => sum + p.rating, 0) / snackPreferences.length)
+                    : 0;
+                  return {
+                    ...snack,
+                    averageRating,
+                    totalRatings: snackPreferences.length
+                  };
+                })
+                .sort((a, b) => b.averageRating - a.averageRating)
+                .slice(0, 5)
+                .map(snack => (
+                  <div key={snack.id} className="analytics-item">
+                    <div className="analytics-item-header">
+                      <span className="item-name">{snack.name}</span>
+                      <span className="item-rating">★ {snack.averageRating.toFixed(1)}</span>
+                    </div>
+                    <div className="analytics-item-details">
+                      <span>Based on {snack.totalRatings} ratings</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="analytics-card">
+              <h3>Most Requested Snacks</h3>
+              <div className="analytics-content">
+                {snacks.map(snack => {
+                  const snackPreferences = preferences.filter(p => p.snack_id === snack.id);
+                  const totalDailyQuantity = snackPreferences.reduce((sum, p) => sum + p.daily_quantity, 0);
+                  return {
+                    ...snack,
+                    totalDailyQuantity,
+                    totalUsers: snackPreferences.length
+                  };
+                })
+                .sort((a, b) => b.totalDailyQuantity - a.totalDailyQuantity)
+                .slice(0, 5)
+                .map(snack => (
+                  <div key={snack.id} className="analytics-item">
+                    <div className="analytics-item-header">
+                      <span className="item-name">{snack.name}</span>
+                      <span className="item-quantity">{snack.totalDailyQuantity} daily</span>
+                    </div>
+                    <div className="analytics-item-details">
+                      <span>Requested by {snack.totalUsers} employees</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="analytics-card">
+              <h3>Cost Analysis</h3>
+              <div className="analytics-content">
+                {snacks.map(snack => {
+                  const snackPreferences = preferences.filter(p => p.snack_id === snack.id);
+                  const totalDailyQuantity = snackPreferences.reduce((sum, p) => sum + p.daily_quantity, 0);
+                  const dailyCost = totalDailyQuantity * snack.price;
+                  return {
+                    ...snack,
+                    dailyCost,
+                    totalDailyQuantity
+                  };
+                })
+                .sort((a, b) => b.dailyCost - a.dailyCost)
+                .slice(0, 5)
+                .map(snack => (
+                  <div key={snack.id} className="analytics-item">
+                    <div className="analytics-item-header">
+                      <span className="item-name">{snack.name}</span>
+                      <span className="item-cost">${snack.dailyCost.toFixed(2)}/day</span>
+                    </div>
+                    <div className="analytics-item-details">
+                      <span>{snack.totalDailyQuantity} units at ${snack.price} each</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="analytics-card">
+              <h3>Employee Engagement</h3>
+              <div className="analytics-content">
+                <div className="analytics-summary">
+                  <div className="summary-item">
+                    <span className="summary-label">Total Ratings</span>
+                    <span className="summary-value">
+                      {preferences.length}
+                    </span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">Average Rating</span>
+                    <span className="summary-value">
+                      {preferences.length > 0 
+                        ? (preferences.reduce((sum, p) => sum + p.rating, 0) / preferences.length).toFixed(1)
+                        : 'N/A'
+                      }
+                    </span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">Active Users</span>
+                    <span className="summary-value">
+                      {new Set(preferences.map(p => p.user_id)).size}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       ) : (
@@ -386,8 +638,126 @@ const AdminDashboard = () => {
             <h3>Order Summary</h3>
             <p className="period">For {dayMultiplier} days</p>
             <p className="grand-total">Total Cost: ${calculateTotalCost().toFixed(2)}</p>
+            <button 
+              className="btn btn-primary place-order-btn"
+              onClick={handlePlaceWeeklyOrder}
+            >
+              Place Weekly Order
+            </button>
           </div>
         </section>
+      )}
+
+      {selectedSnack && (
+        <div className="modal-overlay" onClick={() => {
+          setSelectedSnack(null);
+          setEditMode(false);
+          setEditedSnack(null);
+        }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => {
+              setSelectedSnack(null);
+              setEditMode(false);
+              setEditedSnack(null);
+            }}>&times;</button>
+            
+            {editMode ? (
+              <form onSubmit={handleEditSubmit} className="edit-snack-form">
+                <h2>Edit Snack</h2>
+                <div className="form-group">
+                  <label htmlFor="name">Name</label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={editedSnack.name}
+                    onChange={handleEditChange}
+                    className="form-control"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="description">Description</label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={editedSnack.description}
+                    onChange={handleEditChange}
+                    className="form-control"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="price">Price ($)</label>
+                  <input
+                    type="number"
+                    id="price"
+                    name="price"
+                    value={editedSnack.price}
+                    onChange={handleEditChange}
+                    className="form-control"
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="ingredients">Ingredients (comma-separated)</label>
+                  <textarea
+                    id="ingredients"
+                    name="ingredients"
+                    value={editedSnack.ingredients}
+                    onChange={handleEditChange}
+                    className="form-control"
+                    required
+                  />
+                  <small className="form-text">
+                    List all ingredients to automatically categorize dietary restrictions
+                  </small>
+                </div>
+
+                <div className="modal-actions">
+                  <button type="submit" className="btn btn-primary">Save Changes</button>
+                  <button type="button" className="btn btn-secondary" onClick={() => {
+                    setEditMode(false);
+                    setEditedSnack(null);
+                  }}>Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <h2>{selectedSnack.name}</h2>
+                <p className="modal-description">{selectedSnack.description}</p>
+                <div className="modal-details">
+                  <div className="modal-section">
+                    <h3>Dietary Information</h3>
+                    {renderDietaryBadges(selectedSnack)}
+                  </div>
+                  <div className="modal-section">
+                    <h3>Ingredients</h3>
+                    <p className="ingredients-list">
+                      {selectedSnack.ingredients.split(',').map((ingredient, index) => (
+                        <span key={index} className="ingredient">{ingredient.trim()}</span>
+                      ))}
+                    </p>
+                  </div>
+                  <div className="modal-section">
+                    <h3>Price</h3>
+                    <p className="modal-price">${selectedSnack.price}</p>
+                  </div>
+                </div>
+                <div className="modal-actions">
+                  <button className="btn btn-primary" onClick={(e) => handleEditClick(selectedSnack, e)}>
+                    Edit Snack
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

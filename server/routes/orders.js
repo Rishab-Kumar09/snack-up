@@ -187,57 +187,70 @@ router.get('/company/:companyId', async (req, res) => {
   );
 });
 
-// Create new order
+// Create a new order
 router.post('/', async (req, res) => {
   const { userId, items } = req.body;
   const db = await getDatabase();
 
-  if (!userId || !items || !items.length) {
-    return res.status(400).json({ error: 'User ID and items are required' });
+  if (!userId || !items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'Invalid request body' });
   }
 
-  // Start transaction
-  db.serialize(() => {
-    db.run('BEGIN TRANSACTION');
+  try {
+    // Start a transaction
+    await new Promise((resolve, reject) => {
+      db.run('BEGIN TRANSACTION', (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
 
-    // Create order
-    db.run(
-      'INSERT INTO orders (user_id, status, created_at) VALUES (?, ?, datetime("now"))',
-      [userId, 'pending'],
-      function(err) {
-        if (err) {
-          db.run('ROLLBACK');
-          return res.status(500).json({ error: 'Failed to create order' });
+    // Create the order
+    const orderResult = await new Promise((resolve, reject) => {
+      db.run(
+        'INSERT INTO orders (user_id, status, created_at) VALUES (?, ?, datetime("now"))',
+        [userId, 'pending'],
+        function(err) {
+          if (err) reject(err);
+          else resolve(this.lastID);
         }
+      );
+    });
 
-        const orderId = this.lastID;
-        let itemsProcessed = 0;
+    // Insert order items
+    for (const item of items) {
+      await new Promise((resolve, reject) => {
+        db.run(
+          'INSERT INTO order_items (order_id, snack_id, quantity) VALUES (?, ?, ?)',
+          [orderResult, item.snackId, item.quantity],
+          (err) => {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
+      });
+    }
 
-        // Add order items
-        items.forEach(item => {
-          db.run(
-            'INSERT INTO order_items (order_id, snack_id, quantity) VALUES (?, ?, ?)',
-            [orderId, item.snackId, item.quantity],
-            (err) => {
-              if (err) {
-                db.run('ROLLBACK');
-                return res.status(500).json({ error: 'Failed to add order items' });
-              }
+    // Commit the transaction
+    await new Promise((resolve, reject) => {
+      db.run('COMMIT', (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
 
-              itemsProcessed++;
-              if (itemsProcessed === items.length) {
-                db.run('COMMIT');
-                res.status(201).json({ 
-                  message: 'Order created successfully',
-                  orderId 
-                });
-              }
-            }
-          );
-        });
-      }
-    );
-  });
+    res.status(201).json({ 
+      message: 'Order created successfully',
+      orderId: orderResult
+    });
+  } catch (err) {
+    // Rollback on error
+    await new Promise((resolve) => {
+      db.run('ROLLBACK', () => resolve());
+    });
+    console.error('Error creating order:', err);
+    res.status(500).json({ error: 'Failed to create order' });
+  }
 });
 
 // Update order status
