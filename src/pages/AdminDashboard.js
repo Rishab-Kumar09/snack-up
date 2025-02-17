@@ -8,7 +8,7 @@ const AdminDashboard = () => {
   const [preferences, setPreferences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('inventory');
+  const [activeTab, setActiveTab] = useState('snacks');
   const [weeklyQuantities, setWeeklyQuantities] = useState({});
   const [dayMultiplier, setDayMultiplier] = useState(7);
   const [selectedSnack, setSelectedSnack] = useState(null);
@@ -20,6 +20,12 @@ const AdminDashboard = () => {
     price: '',
     ingredients: ''
   });
+  const [companyUsers, setCompanyUsers] = useState([]);
+  const [newAdminData, setNewAdminData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
 
   const user = JSON.parse(localStorage.getItem('user'));
 
@@ -29,25 +35,29 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [snacksResponse, preferencesResponse, ordersResponse] = await Promise.all([
+      const [snacksResponse, preferencesResponse, ordersResponse, usersResponse] = await Promise.all([
         fetch(`${config.apiBaseUrl}/snacks`),
         fetch(`${config.apiBaseUrl}/preferences/company/${user.companyId}`),
-        fetch(`${config.apiBaseUrl}/orders/company/${user.companyId}`)
+        fetch(`${config.apiBaseUrl}/orders/company/${user.companyId}`),
+        fetch(`${config.apiBaseUrl}/auth/company-users/${user.companyId}`)
       ]);
 
       if (!snacksResponse.ok) throw new Error('Failed to fetch snacks');
       if (!preferencesResponse.ok) throw new Error('Failed to fetch preferences');
       if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
+      if (!usersResponse.ok) throw new Error('Failed to fetch company users');
 
-      const [snacksData, preferencesData, ordersData] = await Promise.all([
+      const [snacksData, preferencesData, ordersData, usersData] = await Promise.all([
         snacksResponse.json(),
         preferencesResponse.json(),
-        ordersResponse.json()
+        ordersResponse.json(),
+        usersResponse.json()
       ]);
 
       setSnacks(snacksData);
       setPreferences(preferencesData);
       setOrders(ordersData);
+      setCompanyUsers(usersData);
 
       // Calculate initial quantities
       const initialWeeklyQuantities = {};
@@ -265,15 +275,67 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleNewAdminSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/auth/add-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...newAdminData,
+          companyId: user.companyId
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to add admin');
+      }
+
+      // Reset form and refresh data
+      setNewAdminData({ name: '', email: '', password: '' });
+      fetchData();
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleRemoveAdmin = async (userId) => {
+    if (!window.confirm('Are you sure you want to remove this admin?')) return;
+
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/auth/remove-admin/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyId: user.companyId
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to remove admin');
+      }
+
+      fetchData();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="alert alert-error">{error}</div>;
 
   const getStatusColor = (status) => {
     const colors = {
       pending: 'var(--warning)',
-      out_of_stock: 'var(--danger)',
       processing: 'var(--info)',
-      in_delivery: 'var(--primary)',
+      out_for_delivery: 'var(--primary)',
       delivered: 'var(--success)',
       cancelled: 'var(--danger)'
     };
@@ -284,10 +346,10 @@ const AdminDashboard = () => {
     <div className="admin-dashboard">
       <nav className="dashboard-nav">
         <button 
-          className={`tab-button ${activeTab === 'inventory' ? 'active' : ''}`}
-          onClick={() => setActiveTab('inventory')}
+          className={`tab-button ${activeTab === 'snacks' ? 'active' : ''}`}
+          onClick={() => setActiveTab('snacks')}
         >
-          Inventory
+          Snacks
         </button>
         <button 
           className={`tab-button ${activeTab === 'orders' ? 'active' : ''}`}
@@ -296,20 +358,20 @@ const AdminDashboard = () => {
           Orders
         </button>
         <button 
-          className={`tab-button ${activeTab === 'analytics' ? 'active' : ''}`}
-          onClick={() => setActiveTab('analytics')}
-        >
-          Analytics
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'weekly-order' ? 'active' : ''}`}
-          onClick={() => setActiveTab('weekly-order')}
+          className={`tab-button ${activeTab === 'weekly' ? 'active' : ''}`}
+          onClick={() => setActiveTab('weekly')}
         >
           Weekly Bulk Order
         </button>
+        <button 
+          className={`tab-button ${activeTab === 'admins' ? 'active' : ''}`}
+          onClick={() => setActiveTab('admins')}
+        >
+          Manage Admins
+        </button>
       </nav>
 
-      {activeTab === 'inventory' ? (
+      {activeTab === 'snacks' ? (
         <>
           <section className="add-snack-section">
             <h2>Add New Snack</h2>
@@ -427,14 +489,15 @@ const AdminDashboard = () => {
               <div key={order.order_id} className="order-card">
                 <div className="order-header">
                   <h3>Order #{order.order_id}</h3>
-                  <span className="status-badge" style={{ backgroundColor: getStatusColor(order.status) }}>
-                    {order.status}
+                  <span className={`status-badge ${order.status}`}>
+                    {order.status.replace(/_/g, ' ')}
                   </span>
                 </div>
                 <div className="order-details">
                   <p>Ordered by: {order.user_name}</p>
                   <p>Email: {order.user_email}</p>
                   <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                  <p className="total-cost">Total Cost: ${order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</p>
                 </div>
                 <div className="order-items">
                   <h4>Items</h4>
@@ -463,128 +526,7 @@ const AdminDashboard = () => {
             ))}
           </div>
         </section>
-      ) : activeTab === 'analytics' ? (
-        <section className="analytics-section">
-          <h2>Snack Analytics</h2>
-          <div className="analytics-grid">
-            <div className="analytics-card">
-              <h3>Top Rated Snacks</h3>
-              <div className="analytics-content">
-                {snacks.map(snack => {
-                  const snackPreferences = preferences.filter(p => p.snack_id === snack.id);
-                  const averageRating = snackPreferences.length > 0
-                    ? (snackPreferences.reduce((sum, p) => sum + p.rating, 0) / snackPreferences.length)
-                    : 0;
-                  return {
-                    ...snack,
-                    averageRating,
-                    totalRatings: snackPreferences.length
-                  };
-                })
-                .sort((a, b) => b.averageRating - a.averageRating)
-                .slice(0, 5)
-                .map(snack => (
-                  <div key={snack.id} className="analytics-item">
-                    <div className="analytics-item-header">
-                      <span className="item-name">{snack.name}</span>
-                      <span className="item-rating">★ {snack.averageRating.toFixed(1)}</span>
-                    </div>
-                    <div className="analytics-item-details">
-                      <span>Based on {snack.totalRatings} ratings</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="analytics-card">
-              <h3>Most Requested Snacks</h3>
-              <div className="analytics-content">
-                {snacks.map(snack => {
-                  const snackPreferences = preferences.filter(p => p.snack_id === snack.id);
-                  const totalDailyQuantity = snackPreferences.reduce((sum, p) => sum + p.daily_quantity, 0);
-                  return {
-                    ...snack,
-                    totalDailyQuantity,
-                    totalUsers: snackPreferences.length
-                  };
-                })
-                .sort((a, b) => b.totalDailyQuantity - a.totalDailyQuantity)
-                .slice(0, 5)
-                .map(snack => (
-                  <div key={snack.id} className="analytics-item">
-                    <div className="analytics-item-header">
-                      <span className="item-name">{snack.name}</span>
-                      <span className="item-quantity">{snack.totalDailyQuantity} daily</span>
-                    </div>
-                    <div className="analytics-item-details">
-                      <span>Requested by {snack.totalUsers} employees</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="analytics-card">
-              <h3>Cost Analysis</h3>
-              <div className="analytics-content">
-                {snacks.map(snack => {
-                  const snackPreferences = preferences.filter(p => p.snack_id === snack.id);
-                  const totalDailyQuantity = snackPreferences.reduce((sum, p) => sum + p.daily_quantity, 0);
-                  const dailyCost = totalDailyQuantity * snack.price;
-                  return {
-                    ...snack,
-                    dailyCost,
-                    totalDailyQuantity
-                  };
-                })
-                .sort((a, b) => b.dailyCost - a.dailyCost)
-                .slice(0, 5)
-                .map(snack => (
-                  <div key={snack.id} className="analytics-item">
-                    <div className="analytics-item-header">
-                      <span className="item-name">{snack.name}</span>
-                      <span className="item-cost">${snack.dailyCost.toFixed(2)}/day</span>
-                    </div>
-                    <div className="analytics-item-details">
-                      <span>{snack.totalDailyQuantity} units at ${snack.price} each</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="analytics-card">
-              <h3>Employee Engagement</h3>
-              <div className="analytics-content">
-                <div className="analytics-summary">
-                  <div className="summary-item">
-                    <span className="summary-label">Total Ratings</span>
-                    <span className="summary-value">
-                      {preferences.length}
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="summary-label">Average Rating</span>
-                    <span className="summary-value">
-                      {preferences.length > 0 
-                        ? (preferences.reduce((sum, p) => sum + p.rating, 0) / preferences.length).toFixed(1)
-                        : 'N/A'
-                      }
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="summary-label">Active Users</span>
-                    <span className="summary-value">
-                      {new Set(preferences.map(p => p.user_id)).size}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : (
+      ) : activeTab === 'weekly' ? (
         <section className="weekly-order-section">
           <h2>Bulk Order Calculator</h2>
           <div className="calculator-controls">
@@ -644,6 +586,77 @@ const AdminDashboard = () => {
             >
               Place Weekly Order
             </button>
+          </div>
+        </section>
+      ) : (
+        <section className="admins-section">
+          <h2>Manage Company Admins</h2>
+          
+          <div className="add-admin-form">
+            <h3>Add New Admin</h3>
+            <form onSubmit={handleNewAdminSubmit}>
+              <div className="form-group">
+                <label htmlFor="name">Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  value={newAdminData.name}
+                  onChange={(e) => setNewAdminData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                  className="form-control"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={newAdminData.email}
+                  onChange={(e) => setNewAdminData(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                  className="form-control"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  value={newAdminData.password}
+                  onChange={(e) => setNewAdminData(prev => ({ ...prev, password: e.target.value }))}
+                  required
+                  className="form-control"
+                />
+              </div>
+              
+              <button type="submit" className="btn btn-primary">Add Admin</button>
+            </form>
+          </div>
+
+          <div className="current-admins">
+            <h3>Current Admins</h3>
+            <div className="admins-grid">
+              {companyUsers
+                .filter(user => user.is_admin)
+                .map(admin => (
+                  <div key={admin.id} className="admin-card">
+                    <div className="admin-info">
+                      <h4>{admin.name}</h4>
+                      <p>{admin.email}</p>
+                    </div>
+                    {admin.id !== user.id && (
+                      <button
+                        onClick={() => handleRemoveAdmin(admin.id)}
+                        className="btn btn-danger btn-sm"
+                      >
+                        Remove Admin
+                      </button>
+                    )}
+                  </div>
+                ))}
+            </div>
           </div>
         </section>
       )}

@@ -116,11 +116,25 @@ const UserDashboard = () => {
   const renderDietaryBadges = (snack) => {
     return (
       <div className="dietary-badges">
-        {snack.isVegetarian && (
-          <span className="badge badge-veg">Vegetarian</span>
+        {snack.isVegan && (
+          <span className="badge badge-vegan" title="Contains no animal products including dairy, eggs, honey, or gelatin">
+            Vegan
+          </span>
         )}
-        {snack.isDairyFree && (
-          <span className="badge badge-dairy-free">Dairy Free</span>
+        {!snack.isVegan && snack.isVegetarian && (
+          <span className="badge badge-veg" title="Contains no meat but may contain dairy, eggs, or honey">
+            Vegetarian
+          </span>
+        )}
+        {!snack.isVegetarian && (
+          <span className="badge badge-non-veg" title="Contains meat, fish, or gelatin">
+            Non-Vegetarian
+          </span>
+        )}
+        {!snack.isVegan && snack.isDairyFree && (
+          <span className="badge badge-dairy-free" title="Contains no milk products but may contain eggs, honey, or other animal products">
+            Dairy Free
+          </span>
         )}
       </div>
     );
@@ -198,27 +212,22 @@ const UserDashboard = () => {
               <div key={order.order_id} className="order-card">
                 <div className="order-header">
                   <h3>Order #{order.order_id}</h3>
-                  <span className="status-badge" style={{ 
-                    backgroundColor: {
-                      'pending': 'var(--warning)',
-                      'processing': 'var(--info)',
-                      'out_for_delivery': 'var(--primary)',
-                      'delivered': 'var(--success)',
-                      'cancelled': 'var(--danger)'
-                    }[order.status] || 'var(--text-color)'
-                  }}>
-                    {order.status}
+                  <span className={`status-badge ${order.status}`}>
+                    {order.status.replace(/_/g, ' ')}
                   </span>
                 </div>
                 <div className="order-details">
                   <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                  {order.ordered_by && order.ordered_by !== user.name && (
+                    <p className="ordered-by">Bulk order placed by: {order.ordered_by}</p>
+                  )}
                 </div>
                 <div className="order-items">
                   <h4>Items</h4>
                   <ul>
                     {order.items.map((item, index) => (
                       <li key={index}>
-                        {item.quantity}x {item.snack_name} (${item.price} each)
+                        {item.quantity}x {item.snack_name}
                       </li>
                     ))}
                   </ul>

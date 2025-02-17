@@ -199,11 +199,37 @@ h2 {
 }
 
 .status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
   font-size: 0.875rem;
+  font-weight: 500;
   color: white;
   text-transform: capitalize;
+  display: inline-block;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: none;
+  cursor: default;
+  transition: transform 0.2s ease;
+}
+
+.status-badge.pending {
+  background-color: var(--warning);
+}
+
+.status-badge.processing {
+  background-color: var(--info);
+}
+
+.status-badge.out_for_delivery {
+  background-color: var(--primary);
+}
+
+.status-badge.delivered {
+  background-color: var(--success);
+}
+
+.status-badge.cancelled {
+  background-color: var(--danger);
 }
 
 .order-details {
@@ -213,6 +239,12 @@ h2 {
 .order-details p {
   margin: 0.5rem 0;
   color: var(--text-secondary);
+}
+
+.ordered-by {
+  font-style: italic;
+  color: var(--primary-color);
+  font-weight: 500;
 }
 
 .order-items {
@@ -252,6 +284,16 @@ h2 {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.badge-vegan {
+  background-color: #8bc34a;
+  color: white;
+}
+
+.badge-non-veg {
+  background-color: #f44336;
+  color: white;
 }
 
 .badge-veg {

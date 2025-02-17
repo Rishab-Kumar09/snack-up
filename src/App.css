@@ -131,3 +131,42 @@ body {
   color: #721c24;
   border: 1px solid #f5c6cb;
 }
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  text-transform: capitalize;
+  display: inline-block;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: none;
+  cursor: default;
+  transition: transform 0.2s ease;
+}
+
+.status-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.status-badge.pending {
+  background-color: var(--warning-color);
+}
+
+.status-badge.processing {
+  background-color: var(--info-color);
+}
+
+.status-badge.out_for_delivery {
+  background-color: var(--primary-color);
+}
+
+.status-badge.delivered {
+  background-color: var(--success-color);
+}
+
+.status-badge.cancelled {
+  background-color: var(--error-color);
+}

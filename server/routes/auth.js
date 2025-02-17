@@ -117,4 +117,103 @@ router.post('/register', async (req, res) => {
   });
 });
 
+// Get company users
+router.get('/company-users/:companyId', async (req, res) => {
+  const { companyId } = req.params;
+  const db = await getDatabase();
+
+  db.all(
+    'SELECT id, name, email, is_admin FROM users WHERE company_id = ?',
+    [companyId],
+    (err, users) => {
+      if (err) {
+        return res.status(500).json({ error: 'Failed to fetch company users' });
+      }
+      res.json(users);
+    }
+  );
+});
+
+// Add new admin
+router.post('/add-admin', async (req, res) => {
+  const { name, email, password, companyId } = req.body;
+  const db = await getDatabase();
+
+  // Basic validation
+  if (!name || !email || !password || !companyId) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  // Check if user already exists
+  db.get('SELECT id FROM users WHERE email = ?', [email], (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (user) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Create new admin user
+    db.run(
+      'INSERT INTO users (name, email, password, is_admin, company_id) VALUES (?, ?, ?, 1, ?)',
+      [name, email, password, companyId],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Failed to create admin' });
+        }
+
+        res.status(201).json({
+          user: {
+            id: this.lastID,
+            name,
+            email,
+            isAdmin: true,
+            companyId
+          }
+        });
+      }
+    );
+  });
+});
+
+// Remove admin privileges
+router.put('/remove-admin/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const { companyId } = req.body;
+  const db = await getDatabase();
+
+  // Verify user belongs to company and is not the only admin
+  db.get(
+    'SELECT COUNT(*) as adminCount FROM users WHERE company_id = ? AND is_admin = 1',
+    [companyId],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      if (result.adminCount <= 1) {
+        return res.status(400).json({ error: 'Cannot remove the only admin' });
+      }
+
+      // Remove admin privileges
+      db.run(
+        'UPDATE users SET is_admin = 0 WHERE id = ? AND company_id = ?',
+        [userId, companyId],
+        function(err) {
+          if (err) {
+            return res.status(500).json({ error: 'Failed to remove admin privileges' });
+          }
+
+          if (this.changes === 0) {
+            return res.status(404).json({ error: 'User not found or not from specified company' });
+          }
+
+          res.json({ message: 'Admin privileges removed successfully' });
+        }
+      );
+    }
+  );
+});
+
 module.exports = router; 
