@@ -14,7 +14,7 @@ const UserDashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     try {
@@ -207,8 +207,11 @@ const UserDashboard = () => {
       ) : (
         <section className="orders-section">
           <h2>My Order History</h2>
+          
+          {/* Personal Orders */}
+          <h3>Personal Orders</h3>
           <div className="orders-grid">
-            {orders.map(order => (
+            {orders.filter(order => !order.is_admin_order).map(order => (
               <div key={order.order_id} className="order-card">
                 <div className="order-header">
                   <h3>Order #{order.order_id}</h3>
@@ -218,9 +221,35 @@ const UserDashboard = () => {
                 </div>
                 <div className="order-details">
                   <p>Date: {new Date(order.created_at).toLocaleString()}</p>
-                  {order.ordered_by && order.ordered_by !== user.name && (
-                    <p className="ordered-by">Bulk order placed by: {order.ordered_by}</p>
-                  )}
+                </div>
+                <div className="order-items">
+                  <h4>Items</h4>
+                  <ul>
+                    {order.items.map((item, index) => (
+                      <li key={index}>
+                        {item.quantity}x {item.snack_name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Admin Bulk Orders */}
+          <h3 className="bulk-orders-title">Company Bulk Orders</h3>
+          <div className="orders-grid">
+            {orders.filter(order => order.is_admin_order).map(order => (
+              <div key={order.order_id} className="order-card bulk-order">
+                <div className="order-header">
+                  <h3>Bulk Order #{order.order_id}</h3>
+                  <span className={`status-badge ${order.status}`}>
+                    {order.status.replace(/_/g, ' ')}
+                  </span>
+                </div>
+                <div className="order-details">
+                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                  <p className="ordered-by">Placed by: {order.ordered_by}</p>
                 </div>
                 <div className="order-items">
                   <h4>Items</h4>

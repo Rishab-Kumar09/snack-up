@@ -10,6 +10,7 @@ const snackRoutes = require('./routes/snacks');
 const preferencesRoutes = require('./routes/preferences');
 const ordersRoutes = require('./routes/orders');
 const companiesRoutes = require('./routes/companies');
+const inventoryRouter = require('./routes/inventory');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,8 +22,9 @@ app.use(express.json());
 // API Routes - these must come BEFORE the static file middleware
 app.use('/api/auth', authRoutes);
 app.use('/api/snacks', snackRoutes);
-app.use('/api/preferences', preferencesRoutes);
 app.use('/api/orders', ordersRoutes);
+app.use('/api/preferences', preferencesRoutes);
+app.use('/api/inventory', inventoryRouter);
 app.use('/api/companies', companiesRoutes);
 
 // Static file serving - this comes AFTER API routes
@@ -45,20 +47,9 @@ app.use((err, req, res, next) => {
 });
 
 // Initialize database and start server
-const startServer = async () => {
-  try {
-    // Initialize database connection
-    await getDatabase();
-    console.log('Connected to SQLite database');
+const db = getDatabase();
 
-    // Start server
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
-
-startServer(); 
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+}); 

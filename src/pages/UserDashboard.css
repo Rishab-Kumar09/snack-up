@@ -398,6 +398,27 @@ h2 {
   margin: 0;
 }
 
+.bulk-orders-title {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border-color);
+}
+
+.order-card.bulk-order {
+  background-color: var(--background-secondary);
+  border: 2px solid var(--primary-color);
+}
+
+.order-card.bulk-order .order-header h3 {
+  color: var(--primary-color);
+}
+
+.order-card.bulk-order .ordered-by {
+  color: var(--primary-color);
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
 @media (max-width: 768px) {
   .dashboard-container {
     padding: 1rem;

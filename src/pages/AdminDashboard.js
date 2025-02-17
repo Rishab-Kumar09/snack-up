@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import config from '../config';
 import './AdminDashboard.css';
+import InventoryTracking from '../components/InventoryTracking';
 
 const AdminDashboard = () => {
   const [snacks, setSnacks] = useState([]);
@@ -26,37 +27,39 @@ const AdminDashboard = () => {
     email: '',
     password: ''
   });
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [employeeOrders, setEmployeeOrders] = useState([]);
 
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     try {
-      const [snacksResponse, preferencesResponse, ordersResponse, usersResponse] = await Promise.all([
+      const [snacksResponse, ordersResponse, preferencesResponse, usersResponse] = await Promise.all([
         fetch(`${config.apiBaseUrl}/snacks`),
-        fetch(`${config.apiBaseUrl}/preferences/company/${user.companyId}`),
         fetch(`${config.apiBaseUrl}/orders/company/${user.companyId}`),
+        fetch(`${config.apiBaseUrl}/preferences/company/${user.companyId}`),
         fetch(`${config.apiBaseUrl}/auth/company-users/${user.companyId}`)
       ]);
 
       if (!snacksResponse.ok) throw new Error('Failed to fetch snacks');
-      if (!preferencesResponse.ok) throw new Error('Failed to fetch preferences');
       if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
+      if (!preferencesResponse.ok) throw new Error('Failed to fetch preferences');
       if (!usersResponse.ok) throw new Error('Failed to fetch company users');
 
-      const [snacksData, preferencesData, ordersData, usersData] = await Promise.all([
+      const [snacksData, ordersData, preferencesData, usersData] = await Promise.all([
         snacksResponse.json(),
-        preferencesResponse.json(),
         ordersResponse.json(),
+        preferencesResponse.json(),
         usersResponse.json()
       ]);
 
       setSnacks(snacksData);
-      setPreferences(preferencesData);
       setOrders(ordersData);
+      setPreferences(preferencesData);
       setCompanyUsers(usersData);
 
       // Calculate initial quantities
@@ -328,6 +331,18 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchEmployeeOrders = async (userId) => {
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/orders/user/${userId}`);
+      if (!response.ok) throw new Error('Failed to fetch employee orders');
+      const data = await response.json();
+      setEmployeeOrders(data);
+      setSelectedEmployee(companyUsers.find(user => user.id === userId));
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="alert alert-error">{error}</div>;
 
@@ -364,6 +379,18 @@ const AdminDashboard = () => {
           Weekly Bulk Order
         </button>
         <button 
+          className={`tab-button ${activeTab === 'inventory' ? 'active' : ''}`}
+          onClick={() => setActiveTab('inventory')}
+        >
+          Inventory Tracking
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'employee-orders' ? 'active' : ''}`}
+          onClick={() => setActiveTab('employee-orders')}
+        >
+          Employee Orders
+        </button>
+        <button 
           className={`tab-button ${activeTab === 'admins' ? 'active' : ''}`}
           onClick={() => setActiveTab('admins')}
         >
@@ -371,7 +398,77 @@ const AdminDashboard = () => {
         </button>
       </nav>
 
-      {activeTab === 'snacks' ? (
+      {activeTab === 'inventory' ? (
+        <InventoryTracking />
+      ) : activeTab === 'employee-orders' ? (
+        <section className="employee-orders-section">
+          <h2>Employee Orders</h2>
+          <div className="employee-orders-grid">
+            <div className="employees-list">
+              <h3>Select Employee</h3>
+              <div className="employees-grid">
+                {companyUsers.map(user => (
+                  <div
+                    key={user.id}
+                    className={`employee-card ${selectedEmployee?.id === user.id ? 'selected' : ''}`}
+                    onClick={() => fetchEmployeeOrders(user.id)}
+                  >
+                    <h4>{user.name}</h4>
+                    <p>{user.email}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {selectedEmployee && (
+              <div className="employee-orders">
+                <h3>Orders for {selectedEmployee.name}</h3>
+                <div className="orders-grid">
+                  {employeeOrders.map(order => (
+                    <div key={order.order_id} className="order-card">
+                      <div className="order-header">
+                        <h3>Order #{order.order_id}</h3>
+                        <span className={`status-badge ${order.status}`}>
+                          {order.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <div className="order-details">
+                        <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                        <p className="total-cost">
+                          Total Cost: ${order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="order-items">
+                        <h4>Items</h4>
+                        <ul>
+                          {order.items.map((item, index) => (
+                            <li key={index}>
+                              {item.quantity}x {item.snack_name} (${item.price} each)
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="order-actions">
+                        <select
+                          className="status-select"
+                          value={order.status}
+                          onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="processing">Processing</option>
+                          <option value="out_for_delivery">Out for Delivery</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      ) : activeTab === 'snacks' ? (
         <>
           <section className="add-snack-section">
             <h2>Add New Snack</h2>
@@ -441,43 +538,21 @@ const AdminDashboard = () => {
           <section className="inventory-section">
             <h2>Current Inventory</h2>
             <div className="inventory-grid">
-              {snacks.map(snack => {
-                const snackPreferences = preferences.filter(p => p.snack_id === snack.id);
-                const averageRating = snackPreferences.length > 0
-                  ? (snackPreferences.reduce((sum, p) => sum + p.rating, 0) / snackPreferences.length).toFixed(1)
-                  : 'No ratings';
-                const totalDailyQuantity = snackPreferences.reduce((sum, p) => sum + p.daily_quantity, 0);
-
-                return (
-                  <div key={snack.id} className="inventory-card">
-                    <div className="inventory-header">
-                      <h3>{snack.name}</h3>
-                      <button className="btn btn-secondary btn-sm" onClick={(e) => handleEditClick(snack, e)}>
-                        Edit
-                      </button>
-                    </div>
-                    <p className="inventory-description">{snack.description}</p>
-                    {renderDietaryBadges(snack)}
-                    <div className="inventory-details">
-                      <span className="price">${snack.price}</span>
-                      <span className="rating">★ {averageRating}</span>
-                    </div>
-                    <div className="preference-summary">
-                      <h4>Employee Preferences</h4>
-                      <p>Total Daily Quantity: {totalDailyQuantity}</p>
-                      <div className="employee-preferences">
-                        {snackPreferences.map(pref => (
-                          <div key={pref.user_id} className="employee-preference">
-                            <span>{pref.user_name}</span>
-                            <span>Quantity: {pref.daily_quantity}</span>
-                            <span>Rating: {'★'.repeat(pref.rating)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+              {snacks.map(snack => (
+                <div key={snack.id} className="inventory-card">
+                  <div className="inventory-header">
+                    <h3>{snack.name}</h3>
+                    <button className="btn btn-secondary btn-sm" onClick={(e) => handleEditClick(snack, e)}>
+                      Edit
+                    </button>
                   </div>
-                );
-              })}
+                  <p className="inventory-description">{snack.description}</p>
+                  {renderDietaryBadges(snack)}
+                  <div className="inventory-details">
+                    <span className="price">${snack.price}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         </>
