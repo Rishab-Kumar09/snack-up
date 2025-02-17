@@ -187,10 +187,12 @@ const AdminDashboard = () => {
 
   const handleSnackClick = (snack) => {
     setSelectedSnack(snack);
+    setEditMode(false);
   };
 
   const closeModal = () => {
     setSelectedSnack(null);
+    setEditMode(false);
   };
 
   const handleEditClick = (snack, e) => {
@@ -345,17 +347,6 @@ const AdminDashboard = () => {
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="alert alert-error">{error}</div>;
-
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: 'var(--warning)',
-      processing: 'var(--info)',
-      out_for_delivery: 'var(--primary)',
-      delivered: 'var(--success)',
-      cancelled: 'var(--danger)'
-    };
-    return colors[status] || 'var(--text-color)';
-  };
 
   return (
     <div className="admin-dashboard">
@@ -737,17 +728,9 @@ const AdminDashboard = () => {
       )}
 
       {selectedSnack && (
-        <div className="modal-overlay" onClick={() => {
-          setSelectedSnack(null);
-          setEditMode(false);
-          setEditedSnack(null);
-        }}>
+        <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => {
-              setSelectedSnack(null);
-              setEditMode(false);
-              setEditedSnack(null);
-            }}>&times;</button>
+            <button className="modal-close" onClick={closeModal}>&times;</button>
             
             {editMode ? (
               <form onSubmit={handleEditSubmit} className="edit-snack-form">
