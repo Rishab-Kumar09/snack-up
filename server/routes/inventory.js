@@ -38,22 +38,22 @@ router.get('/tracking', (req, res) => {
 // Add new inventory tracking record
 router.post('/tracking', (req, res) => {
   const { snack_id, wasted_quantity, shortage_quantity, notes } = req.body;
-  const week_start_date = new Date().toISOString().split('T')[0];
-
-  // Get current week's initial quantity from delivered orders
+  
+  // First, get the most recent record for this snack
   db.get(
-    `SELECT initial_quantity 
-     FROM snack_inventory_tracking 
-     WHERE snack_id = ? AND week_start_date = ?`,
-    [snack_id, week_start_date],
+    'SELECT id, initial_quantity, week_start_date FROM snack_inventory_tracking WHERE snack_id = ? ORDER BY week_start_date DESC LIMIT 1',
+    [snack_id],
     (err, currentWeekData) => {
       if (err) {
+        console.error('Error checking current week data:', err);
         return res.status(500).json({ error: err.message });
       }
 
+      console.log('Most recent record found:', currentWeekData);
+
       if (!currentWeekData) {
         return res.status(400).json({ 
-          error: 'No initial quantity found for this week. Please wait for orders to be delivered.' 
+          error: 'No initial quantity found. Please wait for orders to be delivered.' 
         });
       }
 
@@ -62,20 +62,28 @@ router.post('/tracking', (req, res) => {
         UPDATE snack_inventory_tracking
         SET wasted_quantity = ?,
             shortage_quantity = ?,
-            notes = ?
-        WHERE snack_id = ? AND week_start_date = ?
+            notes = CASE WHEN ? IS NOT NULL AND ? != '' THEN ? ELSE notes END
+        WHERE id = ?
       `;
 
       db.run(
         query, 
-        [wasted_quantity, shortage_quantity, notes, snack_id, week_start_date],
+        [
+          wasted_quantity || 0,
+          shortage_quantity || 0,
+          notes,
+          notes,
+          notes,
+          currentWeekData.id
+        ],
         function(err) {
           if (err) {
             return res.status(500).json({ error: err.message });
           }
 
           res.json({
-            message: "Inventory tracking record updated successfully"
+            message: "Inventory tracking record updated successfully",
+            id: currentWeekData.id
           });
         }
       );
@@ -388,6 +396,23 @@ router.put('/:orderId/status', (req, res) => {
         );
       }
     );
+  });
+});
+
+// Delete a specific tracking record
+router.delete('/tracking/:id', (req, res) => {
+  const { id } = req.params;
+  
+  db.run('DELETE FROM snack_inventory_tracking WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to delete tracking record' });
+    }
+    
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Tracking record not found' });
+    }
+    
+    res.json({ message: 'Tracking record deleted successfully' });
   });
 });
 

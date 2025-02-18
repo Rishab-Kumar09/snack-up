@@ -10,6 +10,7 @@ const UserDashboard = () => {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('snacks');
   const [selectedSnack, setSelectedSnack] = useState(null);
+  const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
@@ -140,12 +141,29 @@ const UserDashboard = () => {
     );
   };
 
-  const handleSnackClick = (snack) => {
-    setSelectedSnack(snack);
+  const handleSnackCardClick = (e, snack) => {
+    // Only open modal if clicking on the card itself, not on inputs
+    if (!e.target.closest('.snack-preferences')) {
+      setSelectedSnack(snack);
+    }
+  };
+
+  const handleSetPreferences = () => {
+    // Show modal with current preferences
+    setIsPreferencesModalOpen(true);
+  };
+
+  const handleUpdatePreference = (snackId, newQuantity) => {
+    handlePreferenceUpdate(
+      snackId,
+      preferences[snackId]?.rating || 0,
+      parseInt(newQuantity) || 0
+    );
   };
 
   const closeModal = () => {
     setSelectedSnack(null);
+    setIsPreferencesModalOpen(false);
   };
 
   if (loading) return <div className="loading">Loading...</div>;
@@ -170,13 +188,20 @@ const UserDashboard = () => {
 
       {activeTab === 'snacks' ? (
         <section className="snacks-section">
-          <h2>Available Snacks</h2>
+          <div className="snacks-header">
+            <h2>Available Snacks</h2>
+            <button 
+              onClick={handleSetPreferences}
+              className="btn btn-primary set-preferences-btn"
+            >
+              Update Daily Preferences
+            </button>
+          </div>
           <div className="snacks-grid">
             {snacks.map(snack => (
-              <div key={snack.id} className="snack-card" onClick={() => handleSnackClick(snack)}>
+              <div key={snack.id} className="snack-card" onClick={(e) => handleSnackCardClick(e, snack)}>
                 <h3>{snack.name}</h3>
                 <p className="snack-description">{snack.description}</p>
-                <p className="snack-price">${snack.price}</p>
                 {renderDietaryBadges(snack)}
                 
                 <div className="snack-preferences">
@@ -207,11 +232,8 @@ const UserDashboard = () => {
       ) : (
         <section className="orders-section">
           <h2>My Order History</h2>
-          
-          {/* Personal Orders */}
-          <h3>Personal Orders</h3>
           <div className="orders-grid">
-            {orders.filter(order => !order.is_admin_order).map(order => (
+            {orders.map(order => (
               <div key={order.order_id} className="order-card">
                 <div className="order-header">
                   <h3>Order #{order.order_id}</h3>
@@ -235,38 +257,50 @@ const UserDashboard = () => {
               </div>
             ))}
           </div>
-
-          {/* Admin Bulk Orders */}
-          <h3 className="bulk-orders-title">Company Bulk Orders</h3>
-          <div className="orders-grid">
-            {orders.filter(order => order.is_admin_order).map(order => (
-              <div key={order.order_id} className="order-card bulk-order">
-                <div className="order-header">
-                  <h3>Bulk Order #{order.order_id}</h3>
-                  <span className={`status-badge ${order.status}`}>
-                    {order.status.replace(/_/g, ' ')}
-                  </span>
-                </div>
-                <div className="order-details">
-                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
-                  <p className="ordered-by">Placed by: {order.ordered_by}</p>
-                </div>
-                <div className="order-items">
-                  <h4>Items</h4>
-                  <ul>
-                    {order.items.map((item, index) => (
-                      <li key={index}>
-                        {item.quantity}x {item.snack_name}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ))}
-          </div>
         </section>
       )}
 
+      {/* Preferences Modal */}
+      {isPreferencesModalOpen && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content preferences-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={closeModal}>&times;</button>
+            <h2>Update Daily Preferences</h2>
+            
+            <div className="preferences-list">
+              {snacks.map(snack => (
+                <div key={snack.id} className="preference-item">
+                  <span className="item-name">{snack.name}</span>
+                  <div className="preference-controls">
+                    <div className="rating-container">
+                      <label>Rating:</label>
+                      {renderStars(snack.id)}
+                    </div>
+                    <div className="quantity-container">
+                      <label>Daily Quantity:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={preferences[snack.id]?.dailyQuantity || 0}
+                        onChange={(e) => handleUpdatePreference(snack.id, e.target.value)}
+                        className="quantity-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="modal-footer">
+              <button onClick={closeModal} className="btn btn-primary">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Snack Details Modal */}
       {selectedSnack && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -285,10 +319,6 @@ const UserDashboard = () => {
                     <span key={index} className="ingredient">{ingredient.trim()}</span>
                   ))}
                 </p>
-              </div>
-              <div className="modal-section">
-                <h3>Price</h3>
-                <p className="modal-price">${selectedSnack.price}</p>
               </div>
             </div>
           </div>

@@ -65,6 +65,7 @@ const initDatabase = () => {
         company_id INTEGER,
         total_cost DECIMAL(10,2) NOT NULL,
         status TEXT DEFAULT 'pending',
+        has_been_delivered INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id),

@@ -40,7 +40,7 @@ const AdminDashboard = () => {
     try {
       const [snacksResponse, ordersResponse, preferencesResponse, usersResponse] = await Promise.all([
         fetch(`${config.apiBaseUrl}/snacks`),
-        fetch(`${config.apiBaseUrl}/orders/company/${user.companyId}`),
+        fetch(`${config.apiBaseUrl}/orders?companyId=${user.companyId}`),
         fetch(`${config.apiBaseUrl}/preferences/company/${user.companyId}`),
         fetch(`${config.apiBaseUrl}/auth/company-users/${user.companyId}`)
       ]);
@@ -60,7 +60,7 @@ const AdminDashboard = () => {
       setSnacks(snacksData);
       setOrders(ordersData);
       setPreferences(preferencesData);
-      setCompanyUsers(usersData);
+      setCompanyUsers(usersData.filter(user => !user.is_admin)); // Only show non-admin users
 
       // Calculate initial quantities
       const initialWeeklyQuantities = {};
@@ -345,6 +345,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/orders/${orderId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete order');
+      }
+
+      // Remove the deleted order from the state
+      setOrders(prevOrders => prevOrders.filter(order => order.order_id !== orderId));
+    } catch (err) {
+      setError('Failed to delete order: ' + err.message);
+    }
+  };
+
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="alert alert-error">{error}</div>;
 
@@ -378,6 +399,7 @@ const AdminDashboard = () => {
         <button 
           className={`tab-button ${activeTab === 'employee-orders' ? 'active' : ''}`}
           onClick={() => setActiveTab('employee-orders')}
+          data-tab="employee-orders"
         >
           Employee Orders
         </button>
@@ -451,6 +473,13 @@ const AdminDashboard = () => {
                           <option value="delivered">Delivered</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
+                        <button
+                          onClick={() => handleDeleteOrder(order.order_id)}
+                          className="btn btn-danger btn-sm"
+                          title="Delete Order"
+                        >
+                          Delete Order
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -587,6 +616,13 @@ const AdminDashboard = () => {
                     <option value="delivered">Delivered</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
+                  <button
+                    onClick={() => handleDeleteOrder(order.order_id)}
+                    className="btn btn-danger btn-sm"
+                    title="Delete Order"
+                  >
+                    Delete Order
+                  </button>
                 </div>
               </div>
             ))}

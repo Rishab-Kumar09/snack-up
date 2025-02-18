@@ -79,6 +79,13 @@ h2 {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border-color);
+  position: relative;
+  z-index: 1;
+}
+
+.snack-preferences input,
+.snack-preferences button {
+  pointer-events: auto;
 }
 
 .rating-container,
@@ -419,6 +426,106 @@ h2 {
   margin-top: 0.5rem;
 }
 
+.snacks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.set-preferences-btn {
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+}
+
+.weekly-order-modal {
+  max-width: 600px;
+  width: 90%;
+}
+
+.order-items-list {
+  margin: 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.item-name {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.item-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.order-summary {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-cost {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.no-items-message {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+
+.preferences-modal {
+  max-width: 600px;
+  width: 90%;
+}
+
+.preferences-list {
+  margin: 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.preference-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.preference-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-footer {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+}
+
 @media (max-width: 768px) {
   .dashboard-container {
     padding: 1rem;
@@ -432,5 +539,21 @@ h2 {
   .modal-content {
     margin: 1rem;
     padding: 1.5rem;
+  }
+
+  .snacks-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .preference-item {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .preference-controls {
+    width: 100%;
   }
 } 

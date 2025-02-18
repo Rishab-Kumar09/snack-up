@@ -89,12 +89,23 @@ const InventoryTracking = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newTracking),
+        body: JSON.stringify({
+          snack_id: parseInt(newTracking.snack_id),
+          wasted_quantity: parseInt(newTracking.wasted_quantity) || 0,
+          shortage_quantity: parseInt(newTracking.shortage_quantity) || 0,
+          notes: newTracking.notes
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to add tracking record');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add tracking record');
+      }
       
-      fetchData();
+      // Refresh all data
+      await fetchData();
+      
+      // Reset form
       setNewTracking({
         snack_id: '',
         wasted_quantity: '0',
@@ -103,7 +114,27 @@ const InventoryTracking = () => {
       });
       setSelectedSnack(null);
     } catch (error) {
-      console.error('Error adding tracking record:', error);
+      console.error('Error adding tracking record:', error.message);
+      alert(error.message);
+    }
+  };
+
+  const handleDelete = async (recordId) => {
+    if (!window.confirm('Are you sure you want to delete this tracking record?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/inventory/tracking/${recordId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Failed to delete tracking record');
+      
+      // Refresh data after successful deletion
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting tracking record:', error);
     }
   };
 
@@ -261,6 +292,7 @@ const InventoryTracking = () => {
               <th>Wasted</th>
               <th>Shortage</th>
               <th>Notes</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -272,6 +304,15 @@ const InventoryTracking = () => {
                 <td>{record.wasted_quantity}</td>
                 <td>{record.shortage_quantity}</td>
                 <td>{record.notes}</td>
+                <td>
+                  <button 
+                    onClick={() => handleDelete(record.id)}
+                    className="btn btn-danger btn-sm"
+                    title="Delete Record"
+                  >
+                    🗑️ Delete
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

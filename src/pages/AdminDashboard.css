@@ -197,6 +197,9 @@ textarea.form-control {
 }
 
 .order-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
   margin-top: 1rem;
 }
 
@@ -328,17 +331,22 @@ textarea.form-control {
   background-color: var(--background-secondary);
   border-radius: 0.5rem;
   text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
 }
 
 .order-summary h3 {
   color: var(--text-color);
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .grand-total {
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--primary-color);
+  margin-bottom: 1rem;
 }
 
 .calculator-controls {
@@ -779,17 +787,16 @@ textarea.form-control {
 }
 
 .employee-orders-section {
-  background-color: var(--background-primary);
-  border-radius: 1rem;
-  padding: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: none !important;
 }
 
 .employee-orders-grid {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 2rem;
-  margin-top: 2rem;
+  display: none !important;
+}
+
+.tab-button[data-tab="employee-orders"],
+.tab-button[class*="employee-orders"] {
+  display: none !important;
 }
 
 .employees-list {
@@ -843,13 +850,23 @@ textarea.form-control {
 }
 
 @media (max-width: 1024px) {
-  .employee-orders-grid {
-    grid-template-columns: 1fr;
-  }
-
   .employees-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 1rem;
   }
+}
+
+.btn-danger {
+  background-color: var(--error-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
 } 
