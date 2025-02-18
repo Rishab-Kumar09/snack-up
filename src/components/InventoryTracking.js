@@ -212,8 +212,17 @@ const InventoryTracking = () => {
                 type="number"
                 min="0"
                 value={newTracking.wasted_quantity}
-                onChange={(e) => setNewTracking(prev => ({ ...prev, wasted_quantity: e.target.value }))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNewTracking(prev => ({ 
+                    ...prev, 
+                    wasted_quantity: value,
+                    // If wastage is set, clear shortage
+                    shortage_quantity: value > 0 ? '0' : prev.shortage_quantity 
+                  }));
+                }}
               />
+              <small className="help-text">Set this if you had excess snacks that went to waste</small>
             </div>
 
             <div className="form-group">
@@ -222,8 +231,17 @@ const InventoryTracking = () => {
                 type="number"
                 min="0"
                 value={newTracking.shortage_quantity}
-                onChange={(e) => setNewTracking(prev => ({ ...prev, shortage_quantity: e.target.value }))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNewTracking(prev => ({ 
+                    ...prev, 
+                    shortage_quantity: value,
+                    // If shortage is set, clear wastage
+                    wasted_quantity: value > 0 ? '0' : prev.wasted_quantity
+                  }));
+                }}
               />
+              <small className="help-text">Set this if you ran out of snacks and needed more</small>
             </div>
 
             <div className="form-group">

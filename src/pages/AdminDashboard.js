@@ -60,7 +60,7 @@ const AdminDashboard = () => {
       setSnacks(snacksData);
       setOrders(ordersData);
       setPreferences(preferencesData);
-      setCompanyUsers(usersData.filter(user => !user.is_admin)); // Only show non-admin users
+      setCompanyUsers(usersData);
 
       // Calculate initial quantities
       const initialWeeklyQuantities = {};

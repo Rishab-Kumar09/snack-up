@@ -39,6 +39,13 @@ router.get('/tracking', (req, res) => {
 router.post('/tracking', (req, res) => {
   const { snack_id, wasted_quantity, shortage_quantity, notes } = req.body;
   
+  // Validate that we don't have both wastage and shortage
+  if (wasted_quantity > 0 && shortage_quantity > 0) {
+    return res.status(400).json({ 
+      error: 'A snack cannot have both wastage and shortage at the same time. Please set either wastage or shortage, not both.' 
+    });
+  }
+
   // First, get the most recent record for this snack
   db.get(
     'SELECT id, initial_quantity, week_start_date FROM snack_inventory_tracking WHERE snack_id = ? ORDER BY week_start_date DESC LIMIT 1',
@@ -314,8 +321,15 @@ router.put('/:orderId/status', (req, res) => {
                   }
 
                   // Get current week's start date
-                  const week_start_date = new Date().toISOString().split('T')[0];
+                  const currentDate = new Date();
+                  const week_start_date = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay())).toISOString().split('T')[0];
                   let itemsProcessed = 0;
+
+                  console.log('Processing order delivery:', {
+                    orderId,
+                    week_start_date,
+                    items: orderItems
+                  });
 
                   // For each item in the order
                   orderItems.forEach(item => {
