@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
 
 // Add new snack
 router.post('/', async (req, res) => {
-  const { name, description, price, ingredients } = req.body;
+  const { name, description, price, ingredients, image_data } = req.body;
   const db = await getDatabase();
 
   if (!name || !description || !price || !ingredients) {
@@ -70,10 +70,15 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Price must be a valid positive number' });
   }
 
+  // Validate image data if provided
+  if (image_data && !image_data.startsWith('data:image')) {
+    return res.status(400).json({ error: 'Invalid image format. Must be a base64 encoded image.' });
+  }
+
   try {
     db.run(
-      'INSERT INTO snacks (name, description, price, ingredients, is_available) VALUES (?, ?, ?, ?, ?)',
-      [name, description, numericPrice, ingredients, 1],
+      'INSERT INTO snacks (name, description, price, ingredients, is_available, image_data) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, description, numericPrice, ingredients, 1, image_data || null],
       function(err) {
         if (err) {
           console.error('Error adding snack:', err);
@@ -87,6 +92,7 @@ router.post('/', async (req, res) => {
           price: numericPrice,
           ingredients,
           is_available: 1,
+          image_data: image_data || null,
           ...classifySnack(ingredients)
         });
       }
@@ -154,7 +160,7 @@ router.put('/:id/availability', async (req, res) => {
 // Add new endpoint for updating snack details
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, ingredients } = req.body;
+  const { name, description, price, ingredients, image_data } = req.body;
   const db = await getDatabase();
 
   if (!name || !description || !price || !ingredients) {
@@ -167,30 +173,46 @@ router.put('/:id', async (req, res) => {
     return res.status(400).json({ error: 'Price must be a valid positive number' });
   }
 
-  try {
-    db.run(
-      'UPDATE snacks SET name = ?, description = ?, price = ?, ingredients = ? WHERE id = ?',
-      [name, description, numericPrice, ingredients, id],
-      function(err) {
-        if (err) {
-          console.error('Error updating snack:', err);
-          return res.status(500).json({ error: 'Failed to update snack' });
-        }
+  // Validate image data if provided
+  if (image_data && !image_data.startsWith('data:image')) {
+    return res.status(400).json({ error: 'Invalid image format. Must be a base64 encoded image.' });
+  }
 
-        if (this.changes === 0) {
-          return res.status(404).json({ error: 'Snack not found' });
+  try {
+    let query = 'UPDATE snacks SET name = ?, description = ?, price = ?, ingredients = ?';
+    let params = [name, description, numericPrice, ingredients];
+
+    // Only update image if new one is provided
+    if (image_data !== undefined) {
+      query += ', image_data = ?';
+      params.push(image_data);
+    }
+
+    query += ' WHERE id = ?';
+    params.push(id);
+
+    db.run(query, params, function(err) {
+      if (err) {
+        console.error('Error updating snack:', err);
+        return res.status(500).json({ error: 'Failed to update snack' });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Snack not found' });
+      }
+
+      // Get the updated snack to return
+      db.get('SELECT * FROM snacks WHERE id = ?', [id], (err, updatedSnack) => {
+        if (err) {
+          return res.status(500).json({ error: 'Failed to fetch updated snack' });
         }
 
         res.json({
-          id: parseInt(id),
-          name,
-          description,
-          price: numericPrice,
-          ingredients,
-          ...classifySnack(ingredients)
+          ...updatedSnack,
+          ...classifySnack(updatedSnack.ingredients)
         });
-      }
-    );
+      });
+    });
   } catch (err) {
     console.error('Error in snack update:', err);
     res.status(500).json({ error: 'An unexpected error occurred while updating the snack' });

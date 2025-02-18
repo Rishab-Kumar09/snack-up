@@ -39,7 +39,8 @@ const initDatabase = () => {
         description TEXT,
         price DECIMAL(10,2) NOT NULL,
         ingredients TEXT,
-        is_available BOOLEAN DEFAULT 1
+        is_available BOOLEAN DEFAULT 1,
+        image_data TEXT
       )
     `);
 

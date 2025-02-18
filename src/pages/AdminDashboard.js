@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import config from '../config';
 import './AdminDashboard.css';
 import InventoryTracking from '../components/InventoryTracking';
+import SnackForm from '../components/SnackForm';
 
 const AdminDashboard = () => {
   const [snacks, setSnacks] = useState([]);
@@ -104,26 +105,19 @@ const AdminDashboard = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (formData) => {
     try {
       const response = await fetch(`${config.apiBaseUrl}/snacks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newSnack),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) throw new Error('Failed to add snack');
       
-      // Reset form and refresh snacks list
-      setNewSnack({
-        name: '',
-        description: '',
-        price: '',
-        ingredients: ''
-      });
+      // Refresh snacks list
       fetchData();
     } catch (err) {
       setError(err.message);
@@ -208,15 +202,14 @@ const AdminDashboard = () => {
     setSelectedSnack(snack);
   };
 
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
+  const handleEditSubmit = async (formData) => {
     try {
       const response = await fetch(`${config.apiBaseUrl}/snacks/${editedSnack.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(editedSnack),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -492,67 +485,7 @@ const AdminDashboard = () => {
         <>
           <section className="add-snack-section">
             <h2>Add New Snack</h2>
-            <form onSubmit={handleSubmit} className="add-snack-form">
-              <div className="form-group">
-                <label htmlFor="name">Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={newSnack.name}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="description">Description</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={newSnack.description}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="price">Price ($)</label>
-                <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  value={newSnack.price}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  step="0.01"
-                  min="0"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="ingredients">Ingredients (comma-separated)</label>
-                <textarea
-                  id="ingredients"
-                  name="ingredients"
-                  value={newSnack.ingredients}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  placeholder="Enter ingredients separated by commas"
-                  required
-                />
-                <small className="form-text">
-                  List all ingredients to automatically categorize as vegetarian and dairy-free
-                </small>
-              </div>
-
-              <button type="submit" className="btn btn-primary">
-                Add Snack
-              </button>
-            </form>
+            <SnackForm onSubmit={handleSubmit} />
           </section>
 
           <section className="inventory-section">
@@ -566,6 +499,11 @@ const AdminDashboard = () => {
                       Edit
                     </button>
                   </div>
+                  {snack.image_data && (
+                    <div className="snack-image-container">
+                      <img src={snack.image_data} alt={snack.name} className="snack-image" />
+                    </div>
+                  )}
                   <p className="inventory-description">{snack.description}</p>
                   {renderDietaryBadges(snack)}
                   <div className="inventory-details">
@@ -769,74 +707,21 @@ const AdminDashboard = () => {
             <button className="modal-close" onClick={closeModal}>&times;</button>
             
             {editMode ? (
-              <form onSubmit={handleEditSubmit} className="edit-snack-form">
+              <>
                 <h2>Edit Snack</h2>
-                <div className="form-group">
-                  <label htmlFor="name">Name</label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={editedSnack.name}
-                    onChange={handleEditChange}
-                    className="form-control"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="description">Description</label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={editedSnack.description}
-                    onChange={handleEditChange}
-                    className="form-control"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="price">Price ($)</label>
-                  <input
-                    type="number"
-                    id="price"
-                    name="price"
-                    value={editedSnack.price}
-                    onChange={handleEditChange}
-                    className="form-control"
-                    step="0.01"
-                    min="0"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="ingredients">Ingredients (comma-separated)</label>
-                  <textarea
-                    id="ingredients"
-                    name="ingredients"
-                    value={editedSnack.ingredients}
-                    onChange={handleEditChange}
-                    className="form-control"
-                    required
-                  />
-                  <small className="form-text">
-                    List all ingredients to automatically categorize dietary restrictions
-                  </small>
-                </div>
-
-                <div className="modal-actions">
-                  <button type="submit" className="btn btn-primary">Save Changes</button>
-                  <button type="button" className="btn btn-secondary" onClick={() => {
-                    setEditMode(false);
-                    setEditedSnack(null);
-                  }}>Cancel</button>
-                </div>
-              </form>
+                <SnackForm 
+                  onSubmit={handleEditSubmit}
+                  initialData={editedSnack}
+                />
+              </>
             ) : (
               <>
                 <h2>{selectedSnack.name}</h2>
+                {selectedSnack.image_data && (
+                  <div className="snack-image-container">
+                    <img src={selectedSnack.image_data} alt={selectedSnack.name} className="snack-image" />
+                  </div>
+                )}
                 <p className="modal-description">{selectedSnack.description}</p>
                 <div className="modal-details">
                   <div className="modal-section">
