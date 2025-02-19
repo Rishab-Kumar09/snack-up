@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const getDatabase = require('./db/connection');
+const initDatabase = require('./db/init');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -25,7 +25,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // API Routes - these must come BEFORE the static file middleware
 app.use('/api/auth', authRoutes);
@@ -55,7 +56,8 @@ app.use((err, req, res, next) => {
 });
 
 // Initialize database and start server
-const db = getDatabase();
+console.log('Initializing database...');
+const db = initDatabase();
 
 // Start server
 app.listen(PORT, () => {

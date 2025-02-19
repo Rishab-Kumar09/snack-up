@@ -3,11 +3,21 @@ const path = require('path');
 
 // Database initialization
 const initDatabase = () => {
+  console.log('Starting database initialization...');
   const dbPath = path.join(__dirname, '../../snackup.db');
+  console.log('Database path:', dbPath);
+  
   const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE);
+  
+  // Enable handling of large text data
+  db.run('PRAGMA max_page_count = 2147483646');
+  db.run('PRAGMA page_size = 32768');
+  console.log('PRAGMA settings applied');
   
   // Initialize tables synchronously
   db.serialize(() => {
+    console.log('Creating tables...');
+    
     // Create companies table
     db.run(`
       CREATE TABLE IF NOT EXISTS companies (
@@ -15,7 +25,10 @@ const initDatabase = () => {
         name TEXT UNIQUE NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
-    `);
+    `, [], (err) => {
+      if (err) console.error('Error creating companies table:', err);
+      else console.log('Companies table created/verified');
+    });
 
     // Create users table
     db.run(`
@@ -29,7 +42,10 @@ const initDatabase = () => {
         company_id INTEGER,
         FOREIGN KEY (company_id) REFERENCES companies(id)
       )
-    `);
+    `, [], (err) => {
+      if (err) console.error('Error creating users table:', err);
+      else console.log('Users table created/verified');
+    });
 
     // Create snacks table
     db.run(`
@@ -42,7 +58,10 @@ const initDatabase = () => {
         is_available BOOLEAN DEFAULT 1,
         image_data TEXT
       )
-    `);
+    `, [], (err) => {
+      if (err) console.error('Error creating snacks table:', err);
+      else console.log('Snacks table created/verified');
+    });
 
     // Create preferences table
     db.run(`
@@ -56,7 +75,10 @@ const initDatabase = () => {
         FOREIGN KEY (snack_id) REFERENCES snacks(id),
         UNIQUE(user_id, snack_id)
       )
-    `);
+    `, [], (err) => {
+      if (err) console.error('Error creating preferences table:', err);
+      else console.log('Preferences table created/verified');
+    });
 
     // Create orders table
     db.run(`
@@ -72,7 +94,10 @@ const initDatabase = () => {
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (company_id) REFERENCES companies(id)
       )
-    `);
+    `, [], (err) => {
+      if (err) console.error('Error creating orders table:', err);
+      else console.log('Orders table created/verified');
+    });
 
     // Create order_items table
     db.run(`
@@ -85,7 +110,10 @@ const initDatabase = () => {
         FOREIGN KEY (order_id) REFERENCES orders(id),
         FOREIGN KEY (snack_id) REFERENCES snacks(id)
       )
-    `);
+    `, [], (err) => {
+      if (err) console.error('Error creating order_items table:', err);
+      else console.log('Order items table created/verified');
+    });
 
     // Create snack_inventory_tracking table
     db.run(`
@@ -100,9 +128,13 @@ const initDatabase = () => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (snack_id) REFERENCES snacks(id)
       )
-    `);
+    `, [], (err) => {
+      if (err) console.error('Error creating inventory tracking table:', err);
+      else console.log('Inventory tracking table created/verified');
+    });
 
     // Check for super admin
+    console.log('Checking for super admin...');
     db.get('SELECT id FROM users WHERE is_super_admin = 1', [], (err, row) => {
       if (err) {
         console.error('Error checking for super admin:', err);
@@ -110,6 +142,7 @@ const initDatabase = () => {
       }
 
       if (!row) {
+        console.log('No super admin found, creating one...');
         // Create super admin if doesn't exist
         db.run(
           'INSERT INTO users (name, email, password, is_admin, is_super_admin) VALUES (?, ?, ?, ?, ?)',
@@ -122,10 +155,13 @@ const initDatabase = () => {
             }
           }
         );
+      } else {
+        console.log('Super admin already exists');
       }
     });
   });
 
+  console.log('Database initialization completed');
   return db;
 };
 

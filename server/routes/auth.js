@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const getDatabase = require('../db/connection');
+const db = getDatabase();
 
 // Login endpoint
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  const db = await getDatabase();
 
   // Basic validation
   if (!email || !password) {
@@ -41,7 +41,6 @@ router.post('/login', async (req, res) => {
 // Registration endpoint
 router.post('/register', async (req, res) => {
   const { name, email, password, role, companyName, companyId } = req.body;
-  const db = await getDatabase();
 
   // Basic validation
   if (!name || !email || !password || !role) {
@@ -120,7 +119,6 @@ router.post('/register', async (req, res) => {
 // Get company users
 router.get('/company-users/:companyId', async (req, res) => {
   const { companyId } = req.params;
-  const db = await getDatabase();
 
   db.all(
     'SELECT id, name, email, is_admin FROM users WHERE company_id = ?',
@@ -137,7 +135,6 @@ router.get('/company-users/:companyId', async (req, res) => {
 // Add new admin
 router.post('/add-admin', async (req, res) => {
   const { name, email, password, companyId } = req.body;
-  const db = await getDatabase();
 
   // Basic validation
   if (!name || !email || !password || !companyId) {
@@ -181,7 +178,6 @@ router.post('/add-admin', async (req, res) => {
 router.put('/remove-admin/:userId', async (req, res) => {
   const { userId } = req.params;
   const { companyId } = req.body;
-  const db = await getDatabase();
 
   // Verify user belongs to company and is not the only admin
   db.get(

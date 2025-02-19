@@ -526,6 +526,34 @@ h2 {
   justify-content: flex-end;
 }
 
+.snack-image-container {
+  width: 100%;
+  height: 200px;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.snack-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modal-image-container {
+  width: 100%;
+  height: 300px;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.modal-snack-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 @media (max-width: 768px) {
   .dashboard-container {
     padding: 1rem;

@@ -197,7 +197,8 @@ const AdminDashboard = () => {
       name: snack.name,
       description: snack.description,
       price: snack.price,
-      ingredients: snack.ingredients
+      ingredients: snack.ingredients,
+      image_data: snack.image_data
     });
     setSelectedSnack(snack);
   };

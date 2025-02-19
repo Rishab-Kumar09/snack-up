@@ -200,6 +200,11 @@ const UserDashboard = () => {
           <div className="snacks-grid">
             {snacks.map(snack => (
               <div key={snack.id} className="snack-card" onClick={(e) => handleSnackCardClick(e, snack)}>
+                {snack.image_data && (
+                  <div className="snack-image-container">
+                    <img src={snack.image_data} alt={snack.name} className="snack-image" />
+                  </div>
+                )}
                 <h3>{snack.name}</h3>
                 <p className="snack-description">{snack.description}</p>
                 {renderDietaryBadges(snack)}
@@ -305,6 +310,11 @@ const UserDashboard = () => {
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <button className="modal-close" onClick={closeModal}>&times;</button>
+            {selectedSnack.image_data && (
+              <div className="modal-image-container">
+                <img src={selectedSnack.image_data} alt={selectedSnack.name} className="modal-snack-image" />
+              </div>
+            )}
             <h2>{selectedSnack.name}</h2>
             <p className="modal-description">{selectedSnack.description}</p>
             <div className="modal-details">
