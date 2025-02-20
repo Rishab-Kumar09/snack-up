@@ -43,17 +43,11 @@ const AdminDashboard = () => {
         throw new Error('No company ID found');
       }
 
-      // Ensure companyId is a valid UUID
-      const companyUUID = user.companyId.toString().length === 36 ? user.companyId : null;
-      if (!companyUUID) {
-        throw new Error('Invalid company ID format');
-      }
-
       const [snacksResponse, ordersResponse, preferencesResponse, usersResponse] = await Promise.all([
-        fetch(`${config.apiBaseUrl}/snacks`),
-        fetch(`${config.apiBaseUrl}/orders/company/${companyUUID}`),
-        fetch(`${config.apiBaseUrl}/preferences/company/${companyUUID}`),
-        fetch(`${config.apiBaseUrl}/auth/company-users/${companyUUID}`)
+        fetch(`${config.apiBaseUrl}/snacks?companyId=${user.companyId}`),
+        fetch(`${config.apiBaseUrl}/orders/company/${user.companyId}`),
+        fetch(`${config.apiBaseUrl}/preferences/company/${user.companyId}`),
+        fetch(`${config.apiBaseUrl}/auth/company-users/${user.companyId}`)
       ]);
 
       if (!snacksResponse.ok) throw new Error('Failed to fetch snacks');

@@ -61,16 +61,12 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Ensure companyId is stored as a string
-        const userData = {
-          ...data.user,
-          companyId: data.user.companyId ? data.user.companyId.toString() : null
-        };
-        localStorage.setItem('user', JSON.stringify(userData));
+        // Store the user data with UUID as is
+        localStorage.setItem('user', JSON.stringify(data.user));
         
-        if (userData.isSuperAdmin) {
+        if (data.user.isSuperAdmin) {
           navigate('/superadmin');
-        } else if (userData.isAdmin) {
+        } else if (data.user.isAdmin) {
           navigate('/admin');
         } else {
           navigate('/dashboard');
