@@ -50,7 +50,7 @@ const AdminDashboard = () => {
       }
 
       const [snacksResponse, ordersResponse, preferencesResponse, usersResponse] = await Promise.all([
-        fetch(`${config.apiBaseUrl}/snacks?companyId=${companyUUID}`),
+        fetch(`${config.apiBaseUrl}/snacks`),
         fetch(`${config.apiBaseUrl}/orders/company/${companyUUID}`),
         fetch(`${config.apiBaseUrl}/preferences/company/${companyUUID}`),
         fetch(`${config.apiBaseUrl}/auth/company-users/${companyUUID}`)
