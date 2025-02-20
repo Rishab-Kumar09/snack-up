@@ -39,9 +39,15 @@ const classifySnack = (ingredients) => {
 
 // Get all snacks
 router.get('/', async (req, res) => {
-  const { data: snacks, error } = await supabase
-    .from('snacks')
-    .select('*');
+  const { companyId } = req.query;
+  let query = supabase.from('snacks').select('*');
+  
+  // If companyId is provided, filter by it
+  if (companyId) {
+    query = query.eq('company_id', companyId);
+  }
+  
+  const { data: snacks, error } = await query;
   
   if (error) {
     return res.status(500).json({ error: error.message });
@@ -57,10 +63,10 @@ router.get('/', async (req, res) => {
 
 // Add new snack
 router.post('/', async (req, res) => {
-  const { name, description, price, ingredients, image_data } = req.body;
+  const { name, description, price, ingredients, image_data, companyId } = req.body;
 
-  if (!name || !description || !price || !ingredients) {
-    return res.status(400).json({ error: 'All fields are required' });
+  if (!name || !description || !price || !ingredients || !companyId) {
+    return res.status(400).json({ error: 'All fields are required including company ID' });
   }
 
   // Convert price to a decimal number
@@ -78,7 +84,15 @@ router.post('/', async (req, res) => {
     const { data, error } = await supabase
       .from('snacks')
       .insert([
-        { name, description, price: numericPrice, ingredients, is_available: 1, image_data: image_data || null }
+        { 
+          name, 
+          description, 
+          price: numericPrice, 
+          ingredients, 
+          is_available: 1, 
+          image_data: image_data || null,
+          company_id: companyId
+        }
       ]);
     
     if (error) {
@@ -94,6 +108,7 @@ router.post('/', async (req, res) => {
       ingredients,
       is_available: 1,
       image_data: image_data || null,
+      company_id: companyId,
       ...classifySnack(ingredients)
     });
   } catch (err) {
