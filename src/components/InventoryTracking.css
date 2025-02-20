@@ -130,6 +130,29 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.week-group {
+  margin-bottom: 2rem;
+}
+
+.week-group:last-child {
+  margin-bottom: 0;
+}
+
+.week-header {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 4px 4px 0 0;
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+.week-group table {
+  border-radius: 0 0 4px 4px;
+  overflow: hidden;
+  margin-top: 0;
+}
+
 .quantity-display {
   padding: 0.5rem;
   background-color: var(--background-primary);

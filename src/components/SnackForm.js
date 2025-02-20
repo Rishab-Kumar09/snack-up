@@ -28,6 +28,17 @@ const SnackForm = ({ onSubmit, initialData = {} }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
+    
+    // Reset form data if it's not in edit mode (no initialData.id)
+    if (!initialData.id) {
+      setFormData({
+        name: '',
+        description: '',
+        price: '',
+        ingredients: '',
+        image_data: null
+      });
+    }
   };
 
   return (

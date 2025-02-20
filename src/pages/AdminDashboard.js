@@ -39,11 +39,21 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
+      if (!user || !user.companyId) {
+        throw new Error('No company ID found');
+      }
+
+      // Ensure companyId is a valid UUID
+      const companyUUID = user.companyId.toString().length === 36 ? user.companyId : null;
+      if (!companyUUID) {
+        throw new Error('Invalid company ID format');
+      }
+
       const [snacksResponse, ordersResponse, preferencesResponse, usersResponse] = await Promise.all([
         fetch(`${config.apiBaseUrl}/snacks`),
-        fetch(`${config.apiBaseUrl}/orders?companyId=${user.companyId}`),
-        fetch(`${config.apiBaseUrl}/preferences/company/${user.companyId}`),
-        fetch(`${config.apiBaseUrl}/auth/company-users/${user.companyId}`)
+        fetch(`${config.apiBaseUrl}/orders/company/${companyUUID}`),
+        fetch(`${config.apiBaseUrl}/preferences/company/${companyUUID}`),
+        fetch(`${config.apiBaseUrl}/auth/company-users/${companyUUID}`)
       ]);
 
       if (!snacksResponse.ok) throw new Error('Failed to fetch snacks');
@@ -63,10 +73,10 @@ const AdminDashboard = () => {
       setPreferences(preferencesData);
       setCompanyUsers(usersData);
 
-      // Calculate initial quantities
+      // Calculate initial quantities based on preferences
       const initialWeeklyQuantities = {};
       snacksData.forEach(snack => {
-        const snackPrefs = preferencesData.filter(p => p.snack_id === snack.id);
+        const snackPrefs = preferencesData.filter(p => p.snack_name === snack.name);
         const dailyTotal = snackPrefs.reduce((sum, p) => sum + p.daily_quantity, 0);
         initialWeeklyQuantities[snack.id] = dailyTotal * dayMultiplier;
       });
@@ -238,6 +248,12 @@ const AdminDashboard = () => {
 
   const handlePlaceWeeklyOrder = async () => {
     try {
+      // Ensure companyId is a valid UUID
+      const companyUUID = user.companyId.toString().length === 36 ? user.companyId : null;
+      if (!companyUUID) {
+        throw new Error('Invalid company ID format');
+      }
+
       // Create order items from weekly quantities
       const orderItems = snacks
         .filter(snack => weeklyQuantities[snack.id] > 0)
@@ -258,6 +274,7 @@ const AdminDashboard = () => {
         },
         body: JSON.stringify({
           userId: user.id,
+          companyId: companyUUID,
           items: orderItems
         }),
       });
@@ -434,7 +451,6 @@ const AdminDashboard = () => {
                   {employeeOrders.map(order => (
                     <div key={order.order_id} className="order-card">
                       <div className="order-header">
-                        <h3>Order #{order.order_id}</h3>
                         <span className={`status-badge ${order.status}`}>
                           {order.status.replace(/_/g, ' ')}
                         </span>
@@ -505,7 +521,7 @@ const AdminDashboard = () => {
                       <img src={snack.image_data} alt={snack.name} className="snack-image" />
                     </div>
                   )}
-                  <p className="inventory-description">{snack.description}</p>
+                  <p className="inventory-description">Ingredients: {snack.ingredients}</p>
                   {renderDietaryBadges(snack)}
                   <div className="inventory-details">
                     <span className="price">${snack.price}</span>
@@ -518,53 +534,117 @@ const AdminDashboard = () => {
       ) : activeTab === 'orders' ? (
         <section className="orders-section">
           <h2>Order Management</h2>
-          <div className="orders-grid">
-            {orders.map(order => (
-              <div key={order.order_id} className="order-card">
-                <div className="order-header">
-                  <h3>Order #{order.order_id}</h3>
-                  <span className={`status-badge ${order.status}`}>
-                    {order.status.replace(/_/g, ' ')}
-                  </span>
-                </div>
-                <div className="order-details">
-                  <p>Ordered by: {order.user_name}</p>
-                  <p>Email: {order.user_email}</p>
-                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
-                  <p className="total-cost">Total Cost: ${order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</p>
-                </div>
-                <div className="order-items">
-                  <h4>Items</h4>
-                  <ul>
-                    {order.items.map((item, index) => (
-                      <li key={index}>
-                        {item.quantity}x {item.snack_name} (${item.price} each)
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="order-actions">
-                  <select
-                    className="status-select"
-                    value={order.status}
-                    onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="processing">Processing</option>
-                    <option value="out_for_delivery">Out for Delivery</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                  <button
-                    onClick={() => handleDeleteOrder(order.order_id)}
-                    className="btn btn-danger btn-sm"
-                    title="Delete Order"
-                  >
-                    Delete Order
-                  </button>
-                </div>
-              </div>
-            ))}
+          
+          {/* New Orders Section */}
+          <div className="orders-category">
+            <h3>New Orders {orders.filter(order => order.status === 'pending').length > 0 && 
+              <span className="new-orders-badge">
+                {orders.filter(order => order.status === 'pending').length}
+              </span>}
+            </h3>
+            <div className="orders-grid">
+              {orders
+                .filter(order => order.status === 'pending')
+                .map(order => (
+                  <div key={order.order_id} className="order-card new-order">
+                    <div className="order-header">
+                      <span className={`status-badge ${order.status}`}>
+                        {order.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <div className="order-details">
+                      <p>Ordered by: {order.user_name}</p>
+                      <p>Email: {order.user_email}</p>
+                      <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                      <p className="total-cost">Total Cost: ${order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</p>
+                    </div>
+                    <div className="order-items">
+                      <h4>Items</h4>
+                      <ul>
+                        {order.items.map((item, index) => (
+                          <li key={index}>
+                            {item.quantity}x {item.snack_name} (${item.price} each)
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="order-actions">
+                      <select
+                        className="status-select"
+                        value={order.status}
+                        onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="out_for_delivery">Out for Delivery</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                      <button
+                        onClick={() => handleDeleteOrder(order.order_id)}
+                        className="btn btn-danger btn-sm"
+                        title="Delete Order"
+                      >
+                        Delete Order
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* Previous Orders Section */}
+          <div className="orders-category">
+            <h3>Previous Orders</h3>
+            <div className="orders-grid">
+              {orders
+                .filter(order => order.status !== 'pending')
+                .map(order => (
+                  <div key={order.order_id} className="order-card">
+                    <div className="order-header">
+                      <span className={`status-badge ${order.status}`}>
+                        {order.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <div className="order-details">
+                      <p>Ordered by: {order.user_name}</p>
+                      <p>Email: {order.user_email}</p>
+                      <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                      <p className="total-cost">Total Cost: ${order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</p>
+                    </div>
+                    <div className="order-items">
+                      <h4>Items</h4>
+                      <ul>
+                        {order.items.map((item, index) => (
+                          <li key={index}>
+                            {item.quantity}x {item.snack_name} (${item.price} each)
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="order-actions">
+                      <select
+                        className="status-select"
+                        value={order.status}
+                        onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="out_for_delivery">Out for Delivery</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                      <button
+                        onClick={() => handleDeleteOrder(order.order_id)}
+                        className="btn btn-danger btn-sm"
+                        title="Delete Order"
+                      >
+                        Delete Order
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </div>
         </section>
       ) : activeTab === 'weekly' ? (

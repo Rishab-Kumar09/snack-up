@@ -301,40 +301,60 @@ const InventoryTracking = () => {
 
       <div className="tracking-history">
         <h3>Tracking History</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Snack</th>
-              <th>Initial Quantity</th>
-              <th>Wasted</th>
-              <th>Shortage</th>
-              <th>Notes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {trackingData.map((record) => (
-              <tr key={record.id}>
-                <td>{new Date(record.week_start_date).toLocaleDateString()}</td>
-                <td>{record.snack_name}</td>
-                <td>{record.initial_quantity}</td>
-                <td>{record.wasted_quantity}</td>
-                <td>{record.shortage_quantity}</td>
-                <td>{record.notes}</td>
-                <td>
-                  <button 
-                    onClick={() => handleDelete(record.id)}
-                    className="btn btn-danger btn-sm"
-                    title="Delete Record"
-                  >
-                    🗑️ Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {Object.values(trackingData.reduce((acc, record) => {
+          const weekStart = new Date(record.week_start_date);
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 6);
+          const weekKey = weekStart.toISOString();
+          
+          if (!acc[weekKey]) {
+            acc[weekKey] = {
+              weekStart,
+              weekEnd,
+              records: []
+            };
+          }
+          acc[weekKey].records.push(record);
+          return acc;
+        }, {})).map(({ weekStart, weekEnd, records }) => (
+          <div key={weekStart.toISOString()} className="week-group">
+            <div className="week-header">
+              Week: {weekStart.toLocaleDateString()} - {weekEnd.toLocaleDateString()}
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Snack</th>
+                  <th>Initial Quantity</th>
+                  <th>Wasted</th>
+                  <th>Shortage</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.map((record) => (
+                  <tr key={record.id}>
+                    <td>{record.snack_name}</td>
+                    <td>{record.initial_quantity}</td>
+                    <td>{record.wasted_quantity}</td>
+                    <td>{record.shortage_quantity}</td>
+                    <td>{record.notes}</td>
+                    <td>
+                      <button 
+                        onClick={() => handleDelete(record.id)}
+                        className="btn btn-danger btn-sm"
+                        title="Delete Record"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
       </div>
     </div>
   );

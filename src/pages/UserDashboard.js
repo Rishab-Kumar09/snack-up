@@ -57,12 +57,30 @@ const UserDashboard = () => {
   const handlePreferenceUpdate = async (snackId, rating, dailyQuantity) => {
     try {
       // Convert values to numbers and handle invalid inputs
-      const numericRating = Number(rating);
       const numericQuantity = Number(dailyQuantity);
 
-      // Validate the numbers
-      if (isNaN(numericRating) || isNaN(numericQuantity)) {
-        throw new Error('Rating and quantity must be valid numbers');
+      // Validate the quantity
+      if (isNaN(numericQuantity)) {
+        throw new Error('Quantity must be a valid number');
+      }
+
+      // Ensure quantity is not negative
+      if (numericQuantity < 0) {
+        throw new Error('Daily quantity cannot be negative');
+      }
+
+      // Only include rating in the request if it's being updated (not 0)
+      const requestBody = {
+        userId: user.id,
+        snackId,
+        dailyQuantity: numericQuantity
+      };
+
+      if (rating > 0) {
+        if (rating < 1 || rating > 5) {
+          throw new Error('Rating must be between 1 and 5');
+        }
+        requestBody.rating = rating;
       }
 
       const response = await fetch(`${config.apiBaseUrl}/preferences`, {
@@ -70,12 +88,7 @@ const UserDashboard = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          userId: user.id,
-          snackId,
-          rating: numericRating,
-          dailyQuantity: numericQuantity
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -85,7 +98,10 @@ const UserDashboard = () => {
 
       setPreferences(prev => ({
         ...prev,
-        [snackId]: { rating: numericRating, dailyQuantity: numericQuantity }
+        [snackId]: { 
+          rating: rating > 0 ? rating : (prev[snackId]?.rating || 0),
+          dailyQuantity: numericQuantity 
+        }
       }));
       setError('');
     } catch (err) {
@@ -206,7 +222,7 @@ const UserDashboard = () => {
                   </div>
                 )}
                 <h3>{snack.name}</h3>
-                <p className="snack-description">{snack.description}</p>
+                <p className="snack-description">Ingredients: {snack.ingredients}</p>
                 {renderDietaryBadges(snack)}
                 
                 <div className="snack-preferences">
@@ -241,7 +257,6 @@ const UserDashboard = () => {
             {orders.map(order => (
               <div key={order.order_id} className="order-card">
                 <div className="order-header">
-                  <h3>Order #{order.order_id}</h3>
                   <span className={`status-badge ${order.status}`}>
                     {order.status.replace(/_/g, ' ')}
                   </span>

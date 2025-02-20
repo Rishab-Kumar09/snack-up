@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const initDatabase = require('./db/init');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -54,10 +53,6 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
-
-// Initialize database and start server
-console.log('Initializing database...');
-const db = initDatabase();
 
 // Start server
 app.listen(PORT, () => {

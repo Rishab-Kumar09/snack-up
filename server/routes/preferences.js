@@ -1,82 +1,137 @@
 const express = require('express');
 const router = express.Router();
-const getDatabase = require('../db/connection');
+const supabase = require('../supabase');
 
 // Get preferences for a user
 router.get('/user/:userId', async (req, res) => {
   const { userId } = req.params;
-  const db = await getDatabase();
 
-  db.all(
-    `SELECT p.*, s.name as snack_name, s.description, s.price
-     FROM preferences p
-     JOIN snacks s ON p.snack_id = s.id
-     WHERE p.user_id = ?`,
-    [userId],
-    (err, preferences) => {
-      if (err) {
-        return res.status(500).json({ error: 'Failed to fetch preferences' });
-      }
-      res.json(preferences);
+  try {
+    const { data: preferences, error } = await supabase
+      .from('preferences')
+      .select(`
+        *,
+        snacks (
+          name,
+          description,
+          price
+        )
+      `)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw error;
     }
-  );
+
+    res.json(preferences);
+  } catch (error) {
+    console.error('Error fetching preferences:', error);
+    res.status(500).json({ error: 'Failed to fetch preferences' });
+  }
 });
 
 // Get all preferences for company
 router.get('/company/:companyId', async (req, res) => {
   const { companyId } = req.params;
-  const db = await getDatabase();
 
-  db.all(
-    `SELECT 
-      p.*,
-      s.name as snack_name,
-      u.name as user_name,
-      u.email as user_email
-     FROM preferences p
-     JOIN snacks s ON p.snack_id = s.id
-     JOIN users u ON p.user_id = u.id
-     WHERE u.company_id = ?`,
-    [companyId],
-    (err, preferences) => {
-      if (err) {
-        return res.status(500).json({ error: 'Failed to fetch company preferences' });
-      }
-      res.json(preferences);
+  try {
+    const { data: preferences, error } = await supabase
+      .from('preferences')
+      .select(`
+        *,
+        snacks (
+          name
+        ),
+        users!inner (
+          name,
+          email
+        )
+      `)
+      .eq('users.company_id', companyId);
+
+    if (error) {
+      throw error;
     }
-  );
+
+    // Format the response
+    const formattedPreferences = preferences.map(pref => ({
+      id: pref.id,
+      user_name: pref.users.name,
+      user_email: pref.users.email,
+      snack_name: pref.snacks.name,
+      daily_quantity: pref.daily_quantity,
+      rating: pref.rating
+    }));
+
+    res.json(formattedPreferences);
+  } catch (error) {
+    console.error('Error fetching company preferences:', error);
+    res.status(500).json({ error: 'Failed to fetch company preferences' });
+  }
 });
 
 // Update or create preference
 router.post('/', async (req, res) => {
   const { userId, snackId, rating, dailyQuantity } = req.body;
-  const db = await getDatabase();
 
-  if (!userId || !snackId || typeof rating !== 'number' || typeof dailyQuantity !== 'number') {
-    return res.status(400).json({ error: 'All fields are required and must be numbers' });
-  }
-
-  if (rating < 0 || rating > 5) {
-    return res.status(400).json({ error: 'Rating must be between 0 and 5' });
+  if (!userId || !snackId || typeof dailyQuantity !== 'number') {
+    return res.status(400).json({ error: 'User ID, snack ID, and daily quantity are required and must be numbers' });
   }
 
   if (dailyQuantity < 0) {
     return res.status(400).json({ error: 'Daily quantity cannot be negative' });
   }
 
-  db.run(
-    `INSERT INTO preferences (user_id, snack_id, rating, daily_quantity)
-     VALUES (?, ?, ?, ?)
-     ON CONFLICT(user_id, snack_id) 
-     DO UPDATE SET rating = ?, daily_quantity = ?`,
-    [userId, snackId, rating, dailyQuantity, rating, dailyQuantity],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Failed to save preference' });
-      }
-      res.status(200).json({ message: 'Preference saved successfully' });
+  if (rating !== undefined && (typeof rating !== 'number' || rating < 1 || rating > 5)) {
+    return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+  }
+
+  try {
+    // Check if preference exists
+    const { data: existing, error: checkError } = await supabase
+      .from('preferences')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('snack_id', snackId)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" error
+      throw checkError;
     }
-  );
+
+    let result;
+    if (existing) {
+      // Update existing preference
+      const updateData = { daily_quantity: dailyQuantity };
+      if (rating !== undefined) {
+        updateData.rating = rating;
+      }
+
+      result = await supabase
+        .from('preferences')
+        .update(updateData)
+        .eq('id', existing.id);
+    } else {
+      // Insert new preference
+      result = await supabase
+        .from('preferences')
+        .insert({
+          user_id: userId,
+          snack_id: snackId,
+          rating: rating || null,
+          daily_quantity: dailyQuantity
+        });
+    }
+
+    if (result.error) {
+      throw result.error;
+    }
+
+    res.status(200).json({ message: existing ? 'Preference updated successfully' : 'Preference created successfully' });
+  } catch (error) {
+    console.error('Error updating preference:', error);
+    res.status(500).json({ error: 'Failed to update preference' });
+  }
 });
 
-module.exports = router; 
+module.exports = router;

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const getDatabase = require('../db/connection');
+const supabase = require('../supabase');
 
 // Helper functions for dietary classification
 const dairyIngredients = [
@@ -39,26 +39,25 @@ const classifySnack = (ingredients) => {
 
 // Get all snacks
 router.get('/', async (req, res) => {
-  const db = await getDatabase();
+  const { data: snacks, error } = await supabase
+    .from('snacks')
+    .select('*');
   
-  db.all('SELECT * FROM snacks', [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    
-    const snacksWithDietary = rows.map(snack => ({
-      ...snack,
-      ...classifySnack(snack.ingredients)
-    }));
-    
-    res.json(snacksWithDietary);
-  });
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+  
+  const snacksWithDietary = snacks.map(snack => ({
+    ...snack,
+    ...classifySnack(snack.ingredients)
+  }));
+  
+  res.json(snacksWithDietary);
 });
 
 // Add new snack
 router.post('/', async (req, res) => {
   const { name, description, price, ingredients, image_data } = req.body;
-  const db = await getDatabase();
 
   if (!name || !description || !price || !ingredients) {
     return res.status(400).json({ error: 'All fields are required' });
@@ -76,27 +75,27 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    db.run(
-      'INSERT INTO snacks (name, description, price, ingredients, is_available, image_data) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, description, numericPrice, ingredients, 1, image_data || null],
-      function(err) {
-        if (err) {
-          console.error('Error adding snack:', err);
-          return res.status(500).json({ error: 'Failed to add snack' });
-        }
+    const { data, error } = await supabase
+      .from('snacks')
+      .insert([
+        { name, description, price: numericPrice, ingredients, is_available: 1, image_data: image_data || null }
+      ]);
+    
+    if (error) {
+      console.error('Error adding snack:', error);
+      return res.status(500).json({ error: 'Failed to add snack' });
+    }
 
-        res.status(201).json({
-          id: this.lastID,
-          name,
-          description,
-          price: numericPrice,
-          ingredients,
-          is_available: 1,
-          image_data: image_data || null,
-          ...classifySnack(ingredients)
-        });
-      }
-    );
+    res.status(201).json({
+      id: data[0].id,
+      name,
+      description,
+      price: numericPrice,
+      ingredients,
+      is_available: 1,
+      image_data: image_data || null,
+      ...classifySnack(ingredients)
+    });
   } catch (err) {
     console.error('Error in snack creation:', err);
     res.status(500).json({ error: 'An unexpected error occurred while adding the snack' });
@@ -106,62 +105,59 @@ router.post('/', async (req, res) => {
 // Filter snacks by dietary preferences
 router.get('/filter', async (req, res) => {
   const { dairyFree, vegetarian } = req.query;
-  const db = await getDatabase();
+  const { data: snacks, error } = await supabase
+    .from('snacks')
+    .select('*');
   
-  db.all('SELECT * FROM snacks', [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    
-    let filteredSnacks = rows.map(snack => ({
-      ...snack,
-      ...classifySnack(snack.ingredients)
-    }));
-    
-    if (dairyFree === 'true') {
-      filteredSnacks = filteredSnacks.filter(snack => snack.isDairyFree);
-    }
-    
-    if (vegetarian === 'true') {
-      filteredSnacks = filteredSnacks.filter(snack => snack.isVegetarian);
-    }
-    
-    res.json(filteredSnacks);
-  });
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+  
+  let filteredSnacks = snacks.map(snack => ({
+    ...snack,
+    ...classifySnack(snack.ingredients)
+  }));
+  
+  if (dairyFree === 'true') {
+    filteredSnacks = filteredSnacks.filter(snack => snack.isDairyFree);
+  }
+  
+  if (vegetarian === 'true') {
+    filteredSnacks = filteredSnacks.filter(snack => snack.isVegetarian);
+  }
+  
+  res.json(filteredSnacks);
 });
 
 // Update snack availability
 router.put('/:id/availability', async (req, res) => {
   const { id } = req.params;
   const { isAvailable } = req.body;
-  const db = await getDatabase();
 
   if (typeof isAvailable !== 'boolean') {
     return res.status(400).json({ error: 'isAvailable must be a boolean' });
   }
 
-  db.run(
-    'UPDATE snacks SET is_available = ? WHERE id = ?',
-    [isAvailable ? 1 : 0, id],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Failed to update snack availability' });
-      }
+  const { data, error } = await supabase
+    .from('snacks')
+    .update({ is_available: isAvailable ? 1 : 0 })
+    .eq('id', id);
+  
+  if (error) {
+    return res.status(500).json({ error: 'Failed to update snack availability' });
+  }
 
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'Snack not found' });
-      }
+  if (data.length === 0) {
+    return res.status(404).json({ error: 'Snack not found' });
+  }
 
-      res.json({ message: 'Snack availability updated successfully' });
-    }
-  );
+  res.json({ message: 'Snack availability updated successfully' });
 });
 
 // Add new endpoint for updating snack details
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { name, description, price, ingredients, image_data } = req.body;
-  const db = await getDatabase();
 
   if (!name || !description || !price || !ingredients) {
     return res.status(400).json({ error: 'All fields are required' });
@@ -179,39 +175,41 @@ router.put('/:id', async (req, res) => {
   }
 
   try {
-    let query = 'UPDATE snacks SET name = ?, description = ?, price = ?, ingredients = ?';
-    let params = [name, description, numericPrice, ingredients];
+    const updateData = { name, description, price: numericPrice, ingredients };
 
     // Only update image if new one is provided
     if (image_data !== undefined) {
-      query += ', image_data = ?';
-      params.push(image_data);
+      updateData.image_data = image_data;
     }
 
-    query += ' WHERE id = ?';
-    params.push(id);
+    const { data, error } = await supabase
+      .from('snacks')
+      .update(updateData)
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error updating snack:', error);
+      return res.status(500).json({ error: 'Failed to update snack' });
+    }
 
-    db.run(query, params, function(err) {
-      if (err) {
-        console.error('Error updating snack:', err);
-        return res.status(500).json({ error: 'Failed to update snack' });
-      }
+    if (data.length === 0) {
+      return res.status(404).json({ error: 'Snack not found' });
+    }
 
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'Snack not found' });
-      }
+    // Get the updated snack to return
+    const { data: updatedSnack, error: fetchError } = await supabase
+      .from('snacks')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (fetchError) {
+      return res.status(500).json({ error: 'Failed to fetch updated snack' });
+    }
 
-      // Get the updated snack to return
-      db.get('SELECT * FROM snacks WHERE id = ?', [id], (err, updatedSnack) => {
-        if (err) {
-          return res.status(500).json({ error: 'Failed to fetch updated snack' });
-        }
-
-        res.json({
-          ...updatedSnack,
-          ...classifySnack(updatedSnack.ingredients)
-        });
-      });
+    res.json({
+      ...updatedSnack,
+      ...classifySnack(updatedSnack.ingredients)
     });
   } catch (err) {
     console.error('Error in snack update:', err);
