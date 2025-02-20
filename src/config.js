@@ -1,6 +1,6 @@
 const config = {
   apiBaseUrl: process.env.NODE_ENV === 'production'
-    ? '/.netlify/functions/api'
+    ? '/api'
     : 'http://localhost:3000/api',
   authEndpoints: {
     login: '/auth/login',
