@@ -1,9 +1,36 @@
 const express = require('express');
 const serverless = require('serverless-http');
+const cors = require('cors');
 require('dotenv').config();
 
-// Import the Express app
-const app = require('../../server/index.js');
+// Create Express app
+const app = express();
+
+// Enable CORS
+app.use(cors({
+  origin: '*',
+  credentials: true
+}));
+
+// Parse JSON bodies
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Import routes
+const authRoutes = require('../../server/routes/auth');
+const snackRoutes = require('../../server/routes/snacks');
+const preferencesRoutes = require('../../server/routes/preferences');
+const ordersRoutes = require('../../server/routes/orders');
+const companiesRoutes = require('../../server/routes/companies');
+const inventoryRouter = require('../../server/routes/inventory');
+
+// API Routes
+app.use('/.netlify/functions/api/auth', authRoutes);
+app.use('/.netlify/functions/api/snacks', snackRoutes);
+app.use('/.netlify/functions/api/orders', ordersRoutes);
+app.use('/.netlify/functions/api/preferences', preferencesRoutes);
+app.use('/.netlify/functions/api/inventory', inventoryRouter);
+app.use('/.netlify/functions/api/companies', companiesRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
