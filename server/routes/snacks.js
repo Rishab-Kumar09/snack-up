@@ -40,23 +40,36 @@ const classifySnack = (ingredients) => {
 
 // Get all snacks for a company
 router.get('/', verifyCompanyAccess, async (req, res) => {
-  const companyId = req.query.companyId || req.body.companyId;
+  const companyId = req.query.companyId || req.body.companyId || req.params.companyId;
+  console.log('Fetching snacks for company:', companyId);
   
-  const { data: snacks, error } = await supabase
-    .from('snacks')
-    .select('*')
-    .eq('company_id', companyId);
-  
-  if (error) {
-    return res.status(500).json({ error: error.message });
+  if (!companyId) {
+    console.error('No company ID provided');
+    return res.status(400).json({ error: 'Company ID is required' });
   }
-  
-  const snacksWithDietary = snacks.map(snack => ({
-    ...snack,
-    ...classifySnack(snack.ingredients)
-  }));
-  
-  res.json(snacksWithDietary);
+
+  try {
+    const { data: snacks, error } = await supabase
+      .from('snacks')
+      .select('*')
+      .eq('company_id', companyId);
+    
+    if (error) {
+      console.error('Supabase error fetching snacks:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    const snacksWithDietary = snacks.map(snack => ({
+      ...snack,
+      ...classifySnack(snack.ingredients)
+    }));
+    
+    console.log(`Successfully fetched ${snacks.length} snacks`);
+    res.json(snacksWithDietary);
+  } catch (error) {
+    console.error('Unexpected error in snacks route:', error);
+    res.status(500).json({ error: 'Failed to fetch snacks' });
+  }
 });
 
 // Add new snack
