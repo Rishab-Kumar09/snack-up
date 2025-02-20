@@ -20,7 +20,7 @@ const UserDashboard = () => {
   const fetchData = async () => {
     try {
       const [snacksResponse, preferencesResponse, ordersResponse] = await Promise.all([
-        fetch(`${config.apiBaseUrl}/snacks?companyId=${user.companyId}`),
+        fetch(`${config.apiBaseUrl}/snacks`),
         fetch(`${config.apiBaseUrl}/preferences/user/${user.id}`),
         fetch(`${config.apiBaseUrl}/orders/user/${user.id}`)
       ]);
