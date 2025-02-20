@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../supabase');
+const { verifyCompanyAccess, verifyCompanyAdmin } = require('../middleware/auth');
 
 // Helper functions for dietary classification
 const dairyIngredients = [
@@ -37,11 +38,14 @@ const classifySnack = (ingredients) => {
   return { isDairyFree, isVegetarian, isVegan };
 };
 
-// Get all snacks
-router.get('/', async (req, res) => {
+// Get all snacks for a company
+router.get('/', verifyCompanyAccess, async (req, res) => {
+  const companyId = req.query.companyId || req.body.companyId;
+  
   const { data: snacks, error } = await supabase
     .from('snacks')
-    .select('*');
+    .select('*')
+    .eq('company_id', companyId);
   
   if (error) {
     return res.status(500).json({ error: error.message });
@@ -56,10 +60,10 @@ router.get('/', async (req, res) => {
 });
 
 // Add new snack
-router.post('/', async (req, res) => {
-  const { name, description, price, ingredients, image_data } = req.body;
+router.post('/', verifyCompanyAdmin, async (req, res) => {
+  const { name, description, price, ingredients, image_data, companyId } = req.body;
 
-  if (!name || !description || !price || !ingredients) {
+  if (!name || !description || !price || !ingredients || !companyId) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
@@ -78,7 +82,15 @@ router.post('/', async (req, res) => {
     const { data, error } = await supabase
       .from('snacks')
       .insert([
-        { name, description, price: numericPrice, ingredients, is_available: 1, image_data: image_data || null }
+        { 
+          name, 
+          description, 
+          price: numericPrice, 
+          ingredients, 
+          is_available: 1, 
+          image_data: image_data || null,
+          company_id: companyId 
+        }
       ]);
     
     if (error) {
@@ -94,6 +106,7 @@ router.post('/', async (req, res) => {
       ingredients,
       is_available: 1,
       image_data: image_data || null,
+      company_id: companyId,
       ...classifySnack(ingredients)
     });
   } catch (err) {
@@ -103,11 +116,17 @@ router.post('/', async (req, res) => {
 });
 
 // Filter snacks by dietary preferences
-router.get('/filter', async (req, res) => {
-  const { dairyFree, vegetarian } = req.query;
+router.get('/filter', verifyCompanyAccess, async (req, res) => {
+  const { dairyFree, vegetarian, companyId } = req.query;
+  
+  if (!companyId) {
+    return res.status(400).json({ error: 'Company ID is required' });
+  }
+
   const { data: snacks, error } = await supabase
     .from('snacks')
-    .select('*');
+    .select('*')
+    .eq('company_id', companyId);
   
   if (error) {
     return res.status(500).json({ error: error.message });
@@ -130,37 +149,64 @@ router.get('/filter', async (req, res) => {
 });
 
 // Update snack availability
-router.put('/:id/availability', async (req, res) => {
+router.put('/:id/availability', verifyCompanyAdmin, async (req, res) => {
   const { id } = req.params;
-  const { isAvailable } = req.body;
+  const { isAvailable, companyId } = req.body;
 
   if (typeof isAvailable !== 'boolean') {
     return res.status(400).json({ error: 'isAvailable must be a boolean' });
   }
 
+  // Verify snack belongs to company
+  const { data: snack, error: snackError } = await supabase
+    .from('snacks')
+    .select('company_id')
+    .eq('id', id)
+    .single();
+
+  if (snackError || !snack) {
+    return res.status(404).json({ error: 'Snack not found' });
+  }
+
+  if (snack.company_id !== companyId) {
+    return res.status(403).json({ error: 'Access denied: Snack does not belong to this company' });
+  }
+
   const { data, error } = await supabase
     .from('snacks')
     .update({ is_available: isAvailable ? 1 : 0 })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('company_id', companyId);
   
   if (error) {
     return res.status(500).json({ error: 'Failed to update snack availability' });
   }
 
-  if (data.length === 0) {
-    return res.status(404).json({ error: 'Snack not found' });
-  }
-
   res.json({ message: 'Snack availability updated successfully' });
 });
 
-// Add new endpoint for updating snack details
-router.put('/:id', async (req, res) => {
+// Update snack details
+router.put('/:id', verifyCompanyAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, ingredients, image_data } = req.body;
+  const { name, description, price, ingredients, image_data, companyId } = req.body;
 
-  if (!name || !description || !price || !ingredients) {
+  if (!name || !description || !price || !ingredients || !companyId) {
     return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  // Verify snack belongs to company
+  const { data: snack, error: snackError } = await supabase
+    .from('snacks')
+    .select('company_id')
+    .eq('id', id)
+    .single();
+
+  if (snackError || !snack) {
+    return res.status(404).json({ error: 'Snack not found' });
+  }
+
+  if (snack.company_id !== companyId) {
+    return res.status(403).json({ error: 'Access denied: Snack does not belong to this company' });
   }
 
   // Convert price to a decimal number
@@ -175,7 +221,13 @@ router.put('/:id', async (req, res) => {
   }
 
   try {
-    const updateData = { name, description, price: numericPrice, ingredients };
+    const updateData = { 
+      name, 
+      description, 
+      price: numericPrice, 
+      ingredients,
+      company_id: companyId
+    };
 
     // Only update image if new one is provided
     if (image_data !== undefined) {
@@ -185,15 +237,12 @@ router.put('/:id', async (req, res) => {
     const { data, error } = await supabase
       .from('snacks')
       .update(updateData)
-      .eq('id', id);
+      .eq('id', id)
+      .eq('company_id', companyId);
     
     if (error) {
       console.error('Error updating snack:', error);
       return res.status(500).json({ error: 'Failed to update snack' });
-    }
-
-    if (data.length === 0) {
-      return res.status(404).json({ error: 'Snack not found' });
     }
 
     // Get the updated snack to return
@@ -201,6 +250,7 @@ router.put('/:id', async (req, res) => {
       .from('snacks')
       .select('*')
       .eq('id', id)
+      .eq('company_id', companyId)
       .single();
     
     if (fetchError) {

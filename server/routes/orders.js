@@ -1,24 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../supabase');
+const { verifyCompanyAccess, verifyCompanyAdmin } = require('../middleware/auth');
 
 // Get all orders (for admin)
-router.get('/company/:companyId', async (req, res) => {
+router.get('/company/:companyId', verifyCompanyAdmin, async (req, res) => {
   const { companyId } = req.params;
 
   try {
-    // First, verify if the user is an admin
-    const { data: adminUser, error: adminError } = await supabase
-      .from('users')
-      .select('is_admin')
-      .eq('company_id', companyId)
-      .eq('is_admin', true)
-      .single();
-
-    if (adminError || !adminUser) {
-      return res.status(403).json({ error: 'Unauthorized access' });
-    }
-
     // Fetch orders for the company
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
@@ -66,7 +55,7 @@ router.get('/company/:companyId', async (req, res) => {
 });
 
 // Get orders for a specific user
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', verifyCompanyAccess, async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -110,7 +99,7 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // Create new order
-router.post('/', async (req, res) => {
+router.post('/', verifyCompanyAccess, async (req, res) => {
   const { userId, companyId, items } = req.body;
 
   if (!userId || !companyId || !items || !items.length) {
@@ -165,7 +154,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update order status
-router.put('/:orderId/status', async (req, res) => {
+router.put('/:orderId/status', verifyCompanyAdmin, async (req, res) => {
   const { orderId } = req.params;
   const { status } = req.body;
 
@@ -175,6 +164,21 @@ router.put('/:orderId/status', async (req, res) => {
   }
 
   try {
+    // Verify order belongs to company
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('company_id')
+      .eq('id', orderId)
+      .single();
+
+    if (orderError || !order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.company_id !== req.body.companyId) {
+      return res.status(403).json({ error: 'Access denied: Order does not belong to this company' });
+    }
+
     const { error } = await supabase
       .from('orders')
       .update({ 
@@ -195,10 +199,25 @@ router.put('/:orderId/status', async (req, res) => {
 });
 
 // Delete order
-router.delete('/:orderId', async (req, res) => {
+router.delete('/:orderId', verifyCompanyAdmin, async (req, res) => {
   const { orderId } = req.params;
 
   try {
+    // Verify order belongs to company
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('company_id')
+      .eq('id', orderId)
+      .single();
+
+    if (orderError || !order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.company_id !== req.body.companyId) {
+      return res.status(403).json({ error: 'Access denied: Order does not belong to this company' });
+    }
+
     // Delete order items first (cascade should handle this, but being explicit)
     const { error: itemsError } = await supabase
       .from('order_items')
@@ -210,13 +229,13 @@ router.delete('/:orderId', async (req, res) => {
     }
 
     // Delete order
-    const { error: orderError } = await supabase
+    const { error: orderDeleteError } = await supabase
       .from('orders')
       .delete()
       .eq('id', orderId);
 
-    if (orderError) {
-      throw orderError;
+    if (orderDeleteError) {
+      throw orderDeleteError;
     }
 
     res.json({ message: 'Order deleted successfully' });
