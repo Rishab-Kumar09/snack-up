@@ -33,21 +33,25 @@ const AdminDashboard = () => {
 
   const user = JSON.parse(localStorage.getItem('user'));
 
+  // Helper function to get validated company UUID
+  const getCompanyUUID = () => {
+    if (!user || !user.companyId) {
+      throw new Error('No company ID found');
+    }
+    const companyUUID = user.companyId.toString().length === 36 ? user.companyId : null;
+    if (!companyUUID) {
+      throw new Error('Invalid company ID format');
+    }
+    return companyUUID;
+  };
+
   useEffect(() => {
     fetchData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     try {
-      if (!user || !user.companyId) {
-        throw new Error('No company ID found');
-      }
-
-      // Ensure companyId is a valid UUID
-      const companyUUID = user.companyId.toString().length === 36 ? user.companyId : null;
-      if (!companyUUID) {
-        throw new Error('Invalid company ID format');
-      }
+      const companyUUID = getCompanyUUID();
 
       const [snacksResponse, ordersResponse, preferencesResponse, usersResponse] = await Promise.all([
         fetch(`${config.apiBaseUrl}/snacks?companyId=${companyUUID}&userId=${user.id}`),
@@ -248,11 +252,7 @@ const AdminDashboard = () => {
 
   const handlePlaceWeeklyOrder = async () => {
     try {
-      // Ensure companyId is a valid UUID
-      const companyUUID = user.companyId.toString().length === 36 ? user.companyId : null;
-      if (!companyUUID) {
-        throw new Error('Invalid company ID format');
-      }
+      const companyUUID = getCompanyUUID();
 
       // Create order items from weekly quantities
       const orderItems = snacks
@@ -348,6 +348,7 @@ const AdminDashboard = () => {
 
   const fetchEmployeeOrders = async (userId) => {
     try {
+      const companyUUID = getCompanyUUID();
       const response = await fetch(`${config.apiBaseUrl}/orders/user/${userId}?companyId=${companyUUID}&userId=${user.id}`);
       if (!response.ok) throw new Error('Failed to fetch employee orders');
       const data = await response.json();
@@ -364,6 +365,7 @@ const AdminDashboard = () => {
     }
 
     try {
+      const companyUUID = getCompanyUUID();
       const response = await fetch(`${config.apiBaseUrl}/orders/${orderId}?companyId=${companyUUID}&userId=${user.id}`, {
         method: 'DELETE'
       });
