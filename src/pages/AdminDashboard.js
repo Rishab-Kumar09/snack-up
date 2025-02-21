@@ -121,12 +121,17 @@ const AdminDashboard = () => {
 
   const handleSubmit = async (formData) => {
     try {
+      const companyUUID = getCompanyUUID();
       const response = await fetch(`${config.apiBaseUrl}/snacks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          companyId: companyUUID,
+          userId: user.id
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to add snack');
