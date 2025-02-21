@@ -1,6 +1,7 @@
 const express = require('express');
 const serverless = require('serverless-http');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 // Create Express app
@@ -18,13 +19,13 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Import routes
-const authRoutes = require('../../server/routes/auth');
-const snackRoutes = require('../../server/routes/snacks');
-const preferencesRoutes = require('../../server/routes/preferences');
-const ordersRoutes = require('../../server/routes/orders');
-const companiesRoutes = require('../../server/routes/companies');
-const inventoryRouter = require('../../server/routes/inventory');
+// Import routes using absolute paths
+const authRoutes = require(path.join(process.cwd(), 'server/routes/auth'));
+const snackRoutes = require(path.join(process.cwd(), 'server/routes/snacks'));
+const preferencesRoutes = require(path.join(process.cwd(), 'server/routes/preferences'));
+const ordersRoutes = require(path.join(process.cwd(), 'server/routes/orders'));
+const companiesRoutes = require(path.join(process.cwd(), 'server/routes/companies'));
+const inventoryRouter = require(path.join(process.cwd(), 'server/routes/inventory'));
 
 // API Routes
 app.use('/auth', authRoutes);
@@ -33,6 +34,17 @@ app.use('/orders', ordersRoutes);
 app.use('/preferences', preferencesRoutes);
 app.use('/inventory', inventoryRouter);
 app.use('/companies', companiesRoutes);
+
+// Log all requests for debugging
+app.use((req, res, next) => {
+  console.log('Request:', {
+    method: req.method,
+    path: req.path,
+    query: req.query,
+    body: req.body
+  });
+  next();
+});
 
 // Error handling middleware with better logging
 app.use((err, req, res, next) => {
