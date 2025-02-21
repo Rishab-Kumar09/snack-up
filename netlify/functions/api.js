@@ -6,11 +6,9 @@ require('dotenv').config();
 // Create Express app
 const app = express();
 
-// Enable CORS
+// Enable CORS with more permissive settings for debugging
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://snack-up.netlify.app'
-    : ['http://localhost:3000', 'http://localhost:3001'],
+  origin: '*', // More permissive for debugging
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -36,15 +34,28 @@ app.use('/preferences', preferencesRoutes);
 app.use('/inventory', inventoryRouter);
 app.use('/companies', companiesRoutes);
 
-// Error handling middleware
+// Error handling middleware with better logging
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({ error: 'Something went wrong!' });
+  console.error('Error details:', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    body: req.body
+  });
+  res.status(err.status || 500).json({ 
+    error: err.message || 'Internal server error',
+    path: req.path
+  });
 });
 
-// Handle 404
+// Handle 404 with more detail
 app.use((req, res) => {
-  res.status(404).json({ error: `Cannot ${req.method} ${req.url}` });
+  console.log('404 Not Found:', req.method, req.path);
+  res.status(404).json({ 
+    error: `Route not found: ${req.method} ${req.path}`,
+    availableRoutes: ['/auth', '/snacks', '/orders', '/preferences', '/inventory', '/companies']
+  });
 });
 
 // Export the serverless handler
