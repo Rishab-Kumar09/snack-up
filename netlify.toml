@@ -7,6 +7,14 @@
   NODE_VERSION = "18"
   NPM_VERSION = "9"
 
+[functions]
+  node_bundler = "esbuild"
+  directory = "netlify/functions"
+
+[dev]
+  command = "npm run start"
+  targetPort = 3000
+
 [[redirects]]
   from = "/.netlify/functions/api/*"
   to = "/.netlify/functions/api/:splat"
@@ -23,9 +31,6 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-[functions]
-  directory = "netlify/functions"
 
 [build.processing]
   skip_processing = false 

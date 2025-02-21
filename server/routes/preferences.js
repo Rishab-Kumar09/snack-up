@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../supabase');
+const { verifyCompanyAccess, verifyCompanyAdmin } = require('../middleware/auth');
 
 // Get preferences for a user
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', verifyCompanyAccess, async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -31,7 +32,7 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // Get all preferences for company
-router.get('/company/:companyId', async (req, res) => {
+router.get('/company/:companyId', verifyCompanyAdmin, async (req, res) => {
   const { companyId } = req.params;
 
   try {
@@ -71,7 +72,7 @@ router.get('/company/:companyId', async (req, res) => {
 });
 
 // Update or create preference
-router.post('/', async (req, res) => {
+router.post('/', verifyCompanyAccess, async (req, res) => {
   const { userId, snackId, rating, dailyQuantity } = req.body;
 
   if (!userId || !snackId || typeof dailyQuantity !== 'number') {
