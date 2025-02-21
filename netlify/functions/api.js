@@ -8,8 +8,12 @@ const app = express();
 
 // Enable CORS
 app.use(cors({
-  origin: '*',
-  credentials: true
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://snack-up.netlify.app'
+    : ['http://localhost:3000', 'http://localhost:3001'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Parse JSON bodies
@@ -25,17 +29,22 @@ const companiesRoutes = require('../../server/routes/companies');
 const inventoryRouter = require('../../server/routes/inventory');
 
 // API Routes
-app.use('/.netlify/functions/api/auth', authRoutes);
-app.use('/.netlify/functions/api/snacks', snackRoutes);
-app.use('/.netlify/functions/api/orders', ordersRoutes);
-app.use('/.netlify/functions/api/preferences', preferencesRoutes);
-app.use('/.netlify/functions/api/inventory', inventoryRouter);
-app.use('/.netlify/functions/api/companies', companiesRoutes);
+app.use('/auth', authRoutes);
+app.use('/snacks', snackRoutes);
+app.use('/orders', ordersRoutes);
+app.use('/preferences', preferencesRoutes);
+app.use('/inventory', inventoryRouter);
+app.use('/companies', companiesRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error:', err);
   res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// Handle 404
+app.use((req, res) => {
+  res.status(404).json({ error: `Cannot ${req.method} ${req.url}` });
 });
 
 // Export the serverless handler
