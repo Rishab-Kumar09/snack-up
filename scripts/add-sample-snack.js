@@ -6,9 +6,51 @@ const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function addSampleSnack() {
+async function addSampleData() {
   try {
-    const { data, error } = await supabase
+    // First, create a sample company
+    console.log('Creating sample company...');
+    const { data: company, error: companyError } = await supabase
+      .from('companies')
+      .insert([
+        {
+          name: 'Sample Company Inc.'
+        }
+      ])
+      .select()
+      .single();
+
+    if (companyError) {
+      throw companyError;
+    }
+
+    console.log('Sample company created:', company);
+
+    // Then, create a sample admin user
+    console.log('Creating sample admin user...');
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .insert([
+        {
+          name: 'Admin User',
+          email: 'admin@samplecompany.com',
+          password: 'admin123',
+          is_admin: true,
+          company_id: company.id
+        }
+      ])
+      .select()
+      .single();
+
+    if (userError) {
+      throw userError;
+    }
+
+    console.log('Sample admin user created:', user);
+
+    // Finally, add sample snacks
+    console.log('Adding sample snacks...');
+    const { data: snacks, error: snacksError } = await supabase
       .from('snacks')
       .insert([
         {
@@ -38,14 +80,39 @@ async function addSampleSnack() {
       ])
       .select();
 
-    if (error) {
-      throw error;
+    if (snacksError) {
+      throw snacksError;
     }
 
-    console.log('Sample snacks added successfully:', data);
+    console.log('Sample snacks added successfully:', snacks);
+
+    // Create sample preferences
+    console.log('Creating sample preferences...');
+    const preferencesData = snacks.map(snack => ({
+      user_id: user.id,
+      snack_id: snack.id,
+      rating: Math.floor(Math.random() * 5) + 1,
+      daily_quantity: Math.floor(Math.random() * 3) + 1
+    }));
+
+    const { error: preferencesError } = await supabase
+      .from('preferences')
+      .insert(preferencesData);
+
+    if (preferencesError) {
+      throw preferencesError;
+    }
+
+    console.log('Sample preferences created successfully');
+
+    console.log('\nAll sample data has been created successfully!');
+    console.log('You can now log in with:');
+    console.log('Email: admin@samplecompany.com');
+    console.log('Password: admin123');
+
   } catch (error) {
-    console.error('Error adding sample snacks:', error);
+    console.error('Error adding sample data:', error);
   }
 }
 
-addSampleSnack(); 
+addSampleData(); 
