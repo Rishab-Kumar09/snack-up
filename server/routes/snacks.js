@@ -175,41 +175,34 @@ router.put('/:id', async (req, res) => {
   }
 
   try {
-    const updateData = { name, description, price: numericPrice, ingredients };
-
-    // Only update image if new one is provided
-    if (image_data !== undefined) {
-      updateData.image_data = image_data;
-    }
+    const updateData = { 
+      name, 
+      description, 
+      price: numericPrice, 
+      ingredients,
+      image_data: image_data === undefined ? undefined : image_data
+    };
 
     const { data, error } = await supabase
       .from('snacks')
       .update(updateData)
-      .eq('id', id);
+      .eq('id', id)
+      .select()
+      .single();
     
     if (error) {
       console.error('Error updating snack:', error);
       return res.status(500).json({ error: 'Failed to update snack' });
     }
 
-    if (data.length === 0) {
+    if (!data) {
       return res.status(404).json({ error: 'Snack not found' });
     }
 
-    // Get the updated snack to return
-    const { data: updatedSnack, error: fetchError } = await supabase
-      .from('snacks')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (fetchError) {
-      return res.status(500).json({ error: 'Failed to fetch updated snack' });
-    }
-
+    // Return the updated snack with dietary classifications
     res.json({
-      ...updatedSnack,
-      ...classifySnack(updatedSnack.ingredients)
+      ...data,
+      ...classifySnack(data.ingredients)
     });
   } catch (err) {
     console.error('Error in snack update:', err);

@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const serverless = require('serverless-http');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -36,31 +35,21 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// API Routes
-if (process.env.NODE_ENV === 'production') {
-  // In production (Netlify), routes need to be prefixed with /.netlify/functions/api
-  app.use('/.netlify/functions/api/auth', authRoutes);
-  app.use('/.netlify/functions/api/snacks', snackRoutes);
-  app.use('/.netlify/functions/api/orders', ordersRoutes);
-  app.use('/.netlify/functions/api/preferences', preferencesRoutes);
-  app.use('/.netlify/functions/api/inventory', inventoryRouter);
-  app.use('/.netlify/functions/api/companies', companiesRoutes);
-} else {
-  // In development, use /api prefix
-  app.use('/api/auth', authRoutes);
-  app.use('/api/snacks', snackRoutes);
-  app.use('/api/orders', ordersRoutes);
-  app.use('/api/preferences', preferencesRoutes);
-  app.use('/api/inventory', inventoryRouter);
-  app.use('/api/companies', companiesRoutes);
-}
+// API Routes - these must come BEFORE the static file middleware
+app.use('/api/auth', authRoutes);
+app.use('/api/snacks', snackRoutes);
+app.use('/api/orders', ordersRoutes);
+app.use('/api/preferences', preferencesRoutes);
+app.use('/api/inventory', inventoryRouter);
+app.use('/api/companies', companiesRoutes);
 
-// Static file serving
+// Static file serving - this comes AFTER API routes
 app.use(express.static(path.join(__dirname, '../build')));
 
-// Catch-all route for React app
+// Catch-all route for React app - this must be LAST
 app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api/') && !req.path.startsWith('/.netlify/functions/api/')) {
+  // Only serve index.html for non-API routes
+  if (!req.path.startsWith('/api/')) {
     res.sendFile(path.join(__dirname, '../build', 'index.html'));
   } else {
     res.status(404).json({ error: 'API endpoint not found' });
@@ -73,12 +62,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// Only start the server in development mode
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-}
-
-// Export the app for serverless use
-module.exports = app; 
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+}); 
