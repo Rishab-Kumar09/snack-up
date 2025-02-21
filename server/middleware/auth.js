@@ -2,8 +2,8 @@ const supabase = require('../supabase');
 
 // Verify user belongs to company
 const verifyCompanyAccess = async (req, res, next) => {
-  const userId = req.query.userId || req.body.userId;
-  const companyId = req.query.companyId || req.body.companyId || req.params.companyId;
+  const userId = req.body.userId || req.query.userId;
+  const companyId = req.body.companyId || req.params.companyId;
 
   if (!userId || !companyId) {
     return res.status(400).json({ error: 'User ID and Company ID are required' });
@@ -33,8 +33,8 @@ const verifyCompanyAccess = async (req, res, next) => {
 
 // Verify user is company admin
 const verifyCompanyAdmin = async (req, res, next) => {
-  const userId = req.query.userId || req.body.userId;
-  const companyId = req.query.companyId || req.body.companyId || req.params.companyId;
+  const userId = req.body.userId || req.query.userId;
+  const companyId = req.body.companyId || req.params.companyId;
 
   if (!userId || !companyId) {
     return res.status(400).json({ error: 'User ID and Company ID are required' });

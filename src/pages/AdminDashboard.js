@@ -33,31 +33,27 @@ const AdminDashboard = () => {
 
   const user = JSON.parse(localStorage.getItem('user'));
 
-  // Helper function to get validated company UUID
-  const getCompanyUUID = () => {
-    if (!user || !user.companyId) {
-      throw new Error('No company ID found');
-    }
-    const companyUUID = user.companyId.toString().length === 36 ? user.companyId : null;
-    if (!companyUUID) {
-      throw new Error('Invalid company ID format');
-    }
-    return companyUUID;
-  };
-
   useEffect(() => {
     fetchData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     try {
-      const companyUUID = getCompanyUUID();
+      if (!user || !user.companyId) {
+        throw new Error('No company ID found');
+      }
+
+      // Ensure companyId is a valid UUID
+      const companyUUID = user.companyId.toString().length === 36 ? user.companyId : null;
+      if (!companyUUID) {
+        throw new Error('Invalid company ID format');
+      }
 
       const [snacksResponse, ordersResponse, preferencesResponse, usersResponse] = await Promise.all([
-        fetch(`${config.apiBaseUrl}/snacks?companyId=${companyUUID}&userId=${user.id}`),
-        fetch(`${config.apiBaseUrl}/orders/company/${companyUUID}?userId=${user.id}`),
-        fetch(`${config.apiBaseUrl}/preferences/company/${companyUUID}?userId=${user.id}`),
-        fetch(`${config.apiBaseUrl}/auth/company-users/${companyUUID}?userId=${user.id}`)
+        fetch(`${config.apiBaseUrl}/snacks`),
+        fetch(`${config.apiBaseUrl}/orders/company/${companyUUID}`),
+        fetch(`${config.apiBaseUrl}/preferences/company/${companyUUID}`),
+        fetch(`${config.apiBaseUrl}/auth/company-users/${companyUUID}`)
       ]);
 
       if (!snacksResponse.ok) throw new Error('Failed to fetch snacks');
@@ -121,17 +117,12 @@ const AdminDashboard = () => {
 
   const handleSubmit = async (formData) => {
     try {
-      const companyUUID = getCompanyUUID();
       const response = await fetch(`${config.apiBaseUrl}/snacks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          companyId: companyUUID,
-          userId: user.id
-        }),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) throw new Error('Failed to add snack');
@@ -257,7 +248,11 @@ const AdminDashboard = () => {
 
   const handlePlaceWeeklyOrder = async () => {
     try {
-      const companyUUID = getCompanyUUID();
+      // Ensure companyId is a valid UUID
+      const companyUUID = user.companyId.toString().length === 36 ? user.companyId : null;
+      if (!companyUUID) {
+        throw new Error('Invalid company ID format');
+      }
 
       // Create order items from weekly quantities
       const orderItems = snacks
@@ -306,8 +301,7 @@ const AdminDashboard = () => {
         },
         body: JSON.stringify({
           ...newAdminData,
-          companyId: user.companyId,
-          userId: user.id
+          companyId: user.companyId
         }),
       });
 
@@ -335,8 +329,7 @@ const AdminDashboard = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          companyId: user.companyId,
-          userId: user.id
+          companyId: user.companyId
         }),
       });
 
@@ -353,8 +346,7 @@ const AdminDashboard = () => {
 
   const fetchEmployeeOrders = async (userId) => {
     try {
-      const companyUUID = getCompanyUUID();
-      const response = await fetch(`${config.apiBaseUrl}/orders/user/${userId}?companyId=${companyUUID}&userId=${user.id}`);
+      const response = await fetch(`${config.apiBaseUrl}/orders/user/${userId}`);
       if (!response.ok) throw new Error('Failed to fetch employee orders');
       const data = await response.json();
       setEmployeeOrders(data);
@@ -370,8 +362,7 @@ const AdminDashboard = () => {
     }
 
     try {
-      const companyUUID = getCompanyUUID();
-      const response = await fetch(`${config.apiBaseUrl}/orders/${orderId}?companyId=${companyUUID}&userId=${user.id}`, {
+      const response = await fetch(`${config.apiBaseUrl}/orders/${orderId}`, {
         method: 'DELETE'
       });
 
@@ -460,4 +451,389 @@ const AdminDashboard = () => {
                   {employeeOrders.map(order => (
                     <div key={order.order_id} className="order-card">
                       <div className="order-header">
-                        <span className={`
+                        <span className={`status-badge ${order.status}`}>
+                          {order.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <div className="order-details">
+                        <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                        <p className="total-cost">
+                          Total Cost: ${order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="order-items">
+                        <h4>Items</h4>
+                        <ul>
+                          {order.items.map((item, index) => (
+                            <li key={index}>
+                              {item.quantity}x {item.snack_name} (${item.price} each)
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="order-actions">
+                        <select
+                          className="status-select"
+                          value={order.status}
+                          onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="processing">Processing</option>
+                          <option value="out_for_delivery">Out for Delivery</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                        <button
+                          onClick={() => handleDeleteOrder(order.order_id)}
+                          className="btn btn-danger btn-sm"
+                          title="Delete Order"
+                        >
+                          Delete Order
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      ) : activeTab === 'snacks' ? (
+        <>
+          <section className="add-snack-section">
+            <h2>Add New Snack</h2>
+            <SnackForm onSubmit={handleSubmit} />
+          </section>
+
+          <section className="inventory-section">
+            <h2>Current Inventory</h2>
+            <div className="inventory-grid">
+              {snacks.map(snack => (
+                <div key={snack.id} className="inventory-card">
+                  <div className="inventory-header">
+                    <h3>{snack.name}</h3>
+                    <button className="btn btn-secondary btn-sm" onClick={(e) => handleEditClick(snack, e)}>
+                      Edit
+                    </button>
+                  </div>
+                  {snack.image_data && (
+                    <div className="snack-image-container">
+                      <img src={snack.image_data} alt={snack.name} className="snack-image" />
+                    </div>
+                  )}
+                  <p className="inventory-description">Ingredients: {snack.ingredients}</p>
+                  {renderDietaryBadges(snack)}
+                  <div className="inventory-details">
+                    <span className="price">${snack.price}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      ) : activeTab === 'orders' ? (
+        <section className="orders-section">
+          <h2>Order Management</h2>
+          
+          {/* New Orders Section */}
+          <div className="orders-category">
+            <h3>New Orders {orders.filter(order => order.status === 'pending').length > 0 && 
+              <span className="new-orders-badge">
+                {orders.filter(order => order.status === 'pending').length}
+              </span>}
+            </h3>
+            <div className="orders-grid">
+              {orders
+                .filter(order => order.status === 'pending')
+                .map(order => (
+                  <div key={order.order_id} className="order-card new-order">
+                    <div className="order-header">
+                      <span className={`status-badge ${order.status}`}>
+                        {order.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <div className="order-details">
+                      <p>Ordered by: {order.user_name}</p>
+                      <p>Email: {order.user_email}</p>
+                      <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                      <p className="total-cost">Total Cost: ${order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</p>
+                    </div>
+                    <div className="order-items">
+                      <h4>Items</h4>
+                      <ul>
+                        {order.items.map((item, index) => (
+                          <li key={index}>
+                            {item.quantity}x {item.snack_name} (${item.price} each)
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="order-actions">
+                      <select
+                        className="status-select"
+                        value={order.status}
+                        onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="out_for_delivery">Out for Delivery</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                      <button
+                        onClick={() => handleDeleteOrder(order.order_id)}
+                        className="btn btn-danger btn-sm"
+                        title="Delete Order"
+                      >
+                        Delete Order
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* Previous Orders Section */}
+          <div className="orders-category">
+            <h3>Previous Orders</h3>
+            <div className="orders-grid">
+              {orders
+                .filter(order => order.status !== 'pending')
+                .map(order => (
+                  <div key={order.order_id} className="order-card">
+                    <div className="order-header">
+                      <span className={`status-badge ${order.status}`}>
+                        {order.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <div className="order-details">
+                      <p>Ordered by: {order.user_name}</p>
+                      <p>Email: {order.user_email}</p>
+                      <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                      <p className="total-cost">Total Cost: ${order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</p>
+                    </div>
+                    <div className="order-items">
+                      <h4>Items</h4>
+                      <ul>
+                        {order.items.map((item, index) => (
+                          <li key={index}>
+                            {item.quantity}x {item.snack_name} (${item.price} each)
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="order-actions">
+                      <select
+                        className="status-select"
+                        value={order.status}
+                        onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="out_for_delivery">Out for Delivery</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                      <button
+                        onClick={() => handleDeleteOrder(order.order_id)}
+                        className="btn btn-danger btn-sm"
+                        title="Delete Order"
+                      >
+                        Delete Order
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </section>
+      ) : activeTab === 'weekly' ? (
+        <section className="weekly-order-section">
+          <h2>Bulk Order Calculator</h2>
+          <div className="calculator-controls">
+            <div className="day-multiplier">
+              <label htmlFor="dayMultiplier">Number of Days:</label>
+              <input
+                type="number"
+                id="dayMultiplier"
+                min="1"
+                value={dayMultiplier}
+                onChange={(e) => handleDayMultiplierChange(e.target.value)}
+                className="form-control"
+              />
+            </div>
+          </div>
+          <div className="weekly-order-grid">
+            {snacks.map(snack => {
+              const snackPreferences = preferences.filter(p => p.snack_id === snack.id);
+              const dailyTotal = snackPreferences.reduce((sum, p) => sum + p.daily_quantity, 0);
+              const totalQuantity = weeklyQuantities[snack.id] || dailyTotal * dayMultiplier;
+              const totalCost = totalQuantity * snack.price;
+
+              return (
+                <div key={snack.id} className="weekly-order-card">
+                  <h3>{snack.name}</h3>
+                  <div className="weekly-order-details">
+                    <div className="quantity-info">
+                      <p>Daily Employee Requests: {dailyTotal}</p>
+                      <p>Suggested {dayMultiplier}-Day Quantity: {dailyTotal * dayMultiplier}</p>
+                      <div className="quantity-adjust">
+                        <label>Adjust {dayMultiplier}-Day Quantity:</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={totalQuantity}
+                          onChange={(e) => handleWeeklyQuantityUpdate(snack.id, e.target.value)}
+                          className="quantity-input"
+                        />
+                      </div>
+                    </div>
+                    <div className="cost-info">
+                      <p>Price per unit: ${snack.price}</p>
+                      <p className="total-cost">Total Cost: ${totalCost.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="order-summary">
+            <h3>Order Summary</h3>
+            <p className="period">For {dayMultiplier} days</p>
+            <p className="grand-total">Total Cost: ${calculateTotalCost().toFixed(2)}</p>
+            <button 
+              className="btn btn-primary place-order-btn"
+              onClick={handlePlaceWeeklyOrder}
+            >
+              Place Weekly Order
+            </button>
+          </div>
+        </section>
+      ) : (
+        <section className="admins-section">
+          <h2>Manage Company Admins</h2>
+          
+          <div className="add-admin-form">
+            <h3>Add New Admin</h3>
+            <form onSubmit={handleNewAdminSubmit}>
+              <div className="form-group">
+                <label htmlFor="name">Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  value={newAdminData.name}
+                  onChange={(e) => setNewAdminData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                  className="form-control"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={newAdminData.email}
+                  onChange={(e) => setNewAdminData(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                  className="form-control"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  value={newAdminData.password}
+                  onChange={(e) => setNewAdminData(prev => ({ ...prev, password: e.target.value }))}
+                  required
+                  className="form-control"
+                />
+              </div>
+              
+              <button type="submit" className="btn btn-primary">Add Admin</button>
+            </form>
+          </div>
+
+          <div className="current-admins">
+            <h3>Current Admins</h3>
+            <div className="admins-grid">
+              {companyUsers
+                .filter(user => user.is_admin)
+                .map(admin => (
+                  <div key={admin.id} className="admin-card">
+                    <div className="admin-info">
+                      <h4>{admin.name}</h4>
+                      <p>{admin.email}</p>
+                    </div>
+                    {admin.id !== user.id && (
+                      <button
+                        onClick={() => handleRemoveAdmin(admin.id)}
+                        className="btn btn-danger btn-sm"
+                      >
+                        Remove Admin
+                      </button>
+                    )}
+                  </div>
+                ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {selectedSnack && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={closeModal}>&times;</button>
+            
+            {editMode ? (
+              <>
+                <h2>Edit Snack</h2>
+                <SnackForm 
+                  onSubmit={handleEditSubmit}
+                  initialData={editedSnack}
+                />
+              </>
+            ) : (
+              <>
+                <h2>{selectedSnack.name}</h2>
+                {selectedSnack.image_data && (
+                  <div className="snack-image-container">
+                    <img src={selectedSnack.image_data} alt={selectedSnack.name} className="snack-image" />
+                  </div>
+                )}
+                <p className="modal-description">{selectedSnack.description}</p>
+                <div className="modal-details">
+                  <div className="modal-section">
+                    <h3>Dietary Information</h3>
+                    {renderDietaryBadges(selectedSnack)}
+                  </div>
+                  <div className="modal-section">
+                    <h3>Ingredients</h3>
+                    <p className="ingredients-list">
+                      {selectedSnack.ingredients.split(',').map((ingredient, index) => (
+                        <span key={index} className="ingredient">{ingredient.trim()}</span>
+                      ))}
+                    </p>
+                  </div>
+                  <div className="modal-section">
+                    <h3>Price</h3>
+                    <p className="modal-price">${selectedSnack.price}</p>
+                  </div>
+                </div>
+                <div className="modal-actions">
+                  <button className="btn btn-primary" onClick={(e) => handleEditClick(selectedSnack, e)}>
+                    Edit Snack
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminDashboard; 

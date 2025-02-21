@@ -26,7 +26,6 @@ CREATE TABLE snacks (
     ingredients TEXT,
     is_available BOOLEAN DEFAULT TRUE,
     image_data TEXT,
-    company_id UUID REFERENCES companies(id) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
