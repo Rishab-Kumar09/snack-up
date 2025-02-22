@@ -72,20 +72,10 @@ const AdminDashboard = () => {
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/orders/${orderId}/status`, {
+      const data = await fetchWithAuth(`/orders/${orderId}/status`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus })
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to update order status');
-      }
-      
-      const data = await response.json();
       
       // Update the order status in the local state
       setOrders(prevOrders => 
@@ -218,18 +208,10 @@ const AdminDashboard = () => {
 
   const handleEditSubmit = async (formData) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/snacks/${editedSnack.id}`, {
+      await fetchWithAuth(`/snacks/${editedSnack.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formData)
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to update snack');
-      }
 
       // Refresh the snacks list
       fetchData();
@@ -271,21 +253,14 @@ const AdminDashboard = () => {
         return;
       }
 
-      const response = await fetch(`${config.apiBaseUrl}/orders`, {
+      await fetchWithAuth('/orders', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           userId: user.id,
           companyId: companyUUID,
           items: orderItems
-        }),
+        })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to create order');
-      }
 
       // Refresh orders data
       fetchData();
@@ -319,20 +294,12 @@ const AdminDashboard = () => {
     if (!window.confirm('Are you sure you want to remove this admin?')) return;
 
     try {
-      const response = await fetch(`${config.apiBaseUrl}/auth/remove-admin/${userId}`, {
+      await fetchWithAuth(`/auth/remove-admin/${userId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           companyId: user.companyId
-        }),
+        })
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to remove admin');
-      }
 
       fetchData();
     } catch (err) {
@@ -342,9 +309,7 @@ const AdminDashboard = () => {
 
   const fetchEmployeeOrders = async (userId) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/orders/user/${userId}`);
-      if (!response.ok) throw new Error('Failed to fetch employee orders');
-      const data = await response.json();
+      const data = await fetchWithAuth(`/orders/user/${userId}`);
       setEmployeeOrders(data);
       setSelectedEmployee(companyUsers.find(user => user.id === userId));
     } catch (error) {
@@ -358,13 +323,9 @@ const AdminDashboard = () => {
     }
 
     try {
-      const response = await fetch(`${config.apiBaseUrl}/orders/${orderId}`, {
+      await fetchWithAuth(`/orders/${orderId}`, {
         method: 'DELETE'
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete order');
-      }
 
       // Remove the deleted order from the state
       setOrders(prevOrders => prevOrders.filter(order => order.order_id !== orderId));
@@ -375,17 +336,10 @@ const AdminDashboard = () => {
 
   const handleToggleAvailability = async (snackId, isAvailable) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/snacks/${snackId}/availability`, {
+      await fetchWithAuth(`/snacks/${snackId}/availability`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({ isAvailable })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to update snack availability');
-      }
 
       // Update the snack's availability in the local state
       setSnacks(prevSnacks =>
@@ -403,13 +357,9 @@ const AdminDashboard = () => {
 
   const handleDeleteSnack = async (snackId) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/snacks/${snackId}`, {
+      await fetchWithAuth(`/snacks/${snackId}`, {
         method: 'DELETE'
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete snack');
-      }
 
       // Remove the snack from the state
       setSnacks(prevSnacks => prevSnacks.filter(snack => snack.id !== snackId));
