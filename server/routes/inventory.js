@@ -36,6 +36,11 @@ router.get('/tracking', async (req, res) => {
 router.post('/tracking', async (req, res) => {
   const { snack_id, wasted_quantity, shortage_quantity, notes } = req.body;
   
+  // Validate required fields
+  if (!snack_id || typeof snack_id !== 'number') {
+    return res.status(400).json({ error: 'Valid snack ID is required' });
+  }
+
   // Validate that we don't have both wastage and shortage
   if (wasted_quantity > 0 && shortage_quantity > 0) {
     return res.status(400).json({ 
@@ -44,6 +49,17 @@ router.post('/tracking', async (req, res) => {
   }
 
   try {
+    // First verify that the snack exists
+    const { data: snack, error: snackError } = await supabase
+      .from('snacks')
+      .select('id')
+      .eq('id', snack_id)
+      .single();
+
+    if (snackError || !snack) {
+      return res.status(404).json({ error: 'Snack not found' });
+    }
+
     // Get the current week's start date
     const now = new Date();
     const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));

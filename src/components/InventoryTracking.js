@@ -84,16 +84,21 @@ const InventoryTracking = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Validate snack_id
+      if (!newTracking.snack_id) {
+        throw new Error('Please select a snack');
+      }
+
       const response = await fetch(`${config.apiBaseUrl}/inventory/tracking`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          snack_id: parseInt(newTracking.snack_id),
-          wasted_quantity: parseInt(newTracking.wasted_quantity) || 0,
-          shortage_quantity: parseInt(newTracking.shortage_quantity) || 0,
-          notes: newTracking.notes
+          snack_id: parseInt(newTracking.snack_id, 10), // Ensure base-10 integer parsing
+          wasted_quantity: parseInt(newTracking.wasted_quantity, 10) || 0,
+          shortage_quantity: parseInt(newTracking.shortage_quantity, 10) || 0,
+          notes: newTracking.notes || ''
         }),
       });
 
