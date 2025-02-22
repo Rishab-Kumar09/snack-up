@@ -170,12 +170,15 @@ const UserDashboard = () => {
     setIsPreferencesModalOpen(true);
   };
 
-  const handleUpdatePreference = (snackId, newQuantity) => {
-    handlePreferenceUpdate(
-      snackId,
-      preferences[snackId]?.rating || 0,
-      parseInt(newQuantity) || 0
-    );
+  const handleUpdatePreference = (snackId, quantity) => {
+    const updatedPreferences = {
+      ...preferences,
+      [snackId]: {
+        ...preferences[snackId],
+        dailyQuantity: parseInt(quantity) || 0
+      }
+    };
+    setPreferences(updatedPreferences);
   };
 
   const closeModal = () => {
@@ -270,10 +273,6 @@ const UserDashboard = () => {
                 <div key={snack.id} className="preference-item">
                   <span className="item-name">{snack.name}</span>
                   <div className="preference-controls">
-                    <div className="rating-container">
-                      <label>Rating:</label>
-                      {renderStars(snack.id)}
-                    </div>
                     <div className="quantity-container">
                       <label>Daily Quantity:</label>
                       <input
