@@ -59,8 +59,8 @@ const AdminDashboard = () => {
       // Calculate initial quantities based on preferences
       const initialWeeklyQuantities = {};
       snacksData.forEach(snack => {
-        // Filter preferences for this snack using snack_id
-        const snackPrefs = preferencesData.filter(p => p.snack_id === snack.id);
+        // Filter preferences for this snack using snack name since that's what we get from the API
+        const snackPrefs = preferencesData.filter(p => p.snack_name === snack.name);
         // Sum up all daily quantities for this snack
         const dailyTotal = snackPrefs.reduce((sum, p) => sum + (p.daily_quantity || 0), 0);
         // Set the weekly quantity
@@ -149,7 +149,7 @@ const AdminDashboard = () => {
     // Update all quantities with new multiplier
     const updatedQuantities = {};
     snacks.forEach(snack => {
-      const snackPrefs = preferences.filter(p => p.snack_id === snack.id);
+      const snackPrefs = preferences.filter(p => p.snack_name === snack.name);
       const dailyTotal = snackPrefs.reduce((sum, p) => sum + p.daily_quantity, 0);
       updatedQuantities[snack.id] = dailyTotal * multiplier;
     });
@@ -655,7 +655,8 @@ const AdminDashboard = () => {
           </div>
           <div className="weekly-order-grid">
             {snacks.map(snack => {
-              const snackPreferences = preferences.filter(p => p.snack_id === snack.id);
+              // Filter preferences by snack name since that's what we get from the API
+              const snackPreferences = preferences.filter(p => p.snack_name === snack.name);
               const dailyTotal = snackPreferences.reduce((sum, p) => sum + (p.daily_quantity || 0), 0);
               const totalQuantity = weeklyQuantities[snack.id] || (dailyTotal * dayMultiplier);
               const totalCost = totalQuantity * snack.price;
