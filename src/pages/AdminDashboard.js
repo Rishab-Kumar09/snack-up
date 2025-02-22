@@ -656,8 +656,8 @@ const AdminDashboard = () => {
           <div className="weekly-order-grid">
             {snacks.map(snack => {
               const snackPreferences = preferences.filter(p => p.snack_id === snack.id);
-              const dailyTotal = snackPreferences.reduce((sum, p) => sum + p.daily_quantity, 0);
-              const totalQuantity = weeklyQuantities[snack.id] || dailyTotal * dayMultiplier;
+              const dailyTotal = snackPreferences.reduce((sum, p) => sum + (p.daily_quantity || 0), 0);
+              const totalQuantity = weeklyQuantities[snack.id] || (dailyTotal * dayMultiplier);
               const totalCost = totalQuantity * snack.price;
 
               return (
