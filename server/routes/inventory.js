@@ -44,43 +44,66 @@ router.post('/tracking', async (req, res) => {
   }
 
   try {
-    // Get the most recent record for this snack
-    const { data: currentWeekData, error: fetchError } = await supabase
+    // Get the current week's start date
+    const now = new Date();
+    const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+    weekStart.setHours(0, 0, 0, 0);
+
+    // Check if a record already exists for this snack and week
+    const { data: existingRecord, error: fetchError } = await supabase
       .from('snack_inventory_tracking')
       .select('*')
       .eq('snack_id', snack_id)
-      .order('week_start_date', { ascending: false })
-      .limit(1)
+      .eq('week_start_date', weekStart.toISOString().split('T')[0])
       .single();
 
-    if (fetchError) {
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows returned
       throw fetchError;
     }
 
-    if (!currentWeekData) {
-      return res.status(400).json({ 
-        error: 'No initial quantity found. Please wait for orders to be delivered.' 
+    if (existingRecord) {
+      // Update existing record
+      const { error: updateError } = await supabase
+        .from('snack_inventory_tracking')
+        .update({
+          wasted_quantity: wasted_quantity || 0,
+          shortage_quantity: shortage_quantity || 0,
+          notes: notes || existingRecord.notes
+        })
+        .eq('id', existingRecord.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      res.json({
+        message: "Inventory tracking record updated successfully",
+        id: existingRecord.id
+      });
+    } else {
+      // Create new record
+      const { data: newRecord, error: insertError } = await supabase
+        .from('snack_inventory_tracking')
+        .insert({
+          snack_id,
+          week_start_date: weekStart.toISOString().split('T')[0],
+          initial_quantity: 0, // This will be updated when orders are delivered
+          wasted_quantity: wasted_quantity || 0,
+          shortage_quantity: shortage_quantity || 0,
+          notes: notes || ''
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      res.json({
+        message: "Inventory tracking record created successfully",
+        id: newRecord.id
       });
     }
-
-    // Update the tracking record
-    const { error: updateError } = await supabase
-      .from('snack_inventory_tracking')
-      .update({
-        wasted_quantity: wasted_quantity || 0,
-        shortage_quantity: shortage_quantity || 0,
-        notes: notes || currentWeekData.notes
-      })
-      .eq('id', currentWeekData.id);
-
-    if (updateError) {
-      throw updateError;
-    }
-
-    res.json({
-      message: "Inventory tracking record updated successfully",
-      id: currentWeekData.id
-    });
   } catch (error) {
     console.error('Error updating inventory tracking:', error);
     res.status(500).json({ error: 'Failed to update inventory tracking' });
