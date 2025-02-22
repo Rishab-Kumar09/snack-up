@@ -602,7 +602,7 @@ const AdminDashboard = () => {
                       <p>Ordered by: {order.user_name}</p>
                       <p>Email: {order.user_email}</p>
                       <p>Date: {new Date(order.created_at).toLocaleString()}</p>
-                      <p className="total-cost">Total Cost: ${order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</p>
+                      <p className="total-cost">Total Cost: ${order.total_cost.toFixed(2)}</p>
                     </div>
                     <div className="order-items">
                       <h4>Items</h4>
@@ -656,7 +656,7 @@ const AdminDashboard = () => {
                       <p>Ordered by: {order.user_name}</p>
                       <p>Email: {order.user_email}</p>
                       <p>Date: {new Date(order.created_at).toLocaleString()}</p>
-                      <p className="total-cost">Total Cost: ${order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</p>
+                      <p className="total-cost">Total Cost: ${order.total_cost.toFixed(2)}</p>
                     </div>
                     <div className="order-items">
                       <h4>Items</h4>
