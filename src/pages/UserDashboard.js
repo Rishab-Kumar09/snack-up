@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import config from '../config';
 import './UserDashboard.css';
 import SnackCard from '../components/SnackCard';
+import { fetchWithAuth } from '../utils/api';
 
 const UserDashboard = () => {
   const [snacks, setSnacks] = useState([]);
