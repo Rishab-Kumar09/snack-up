@@ -77,7 +77,7 @@ const SnackCard = ({
             </div>
           </div>
         )}
-        {store_url && (
+        {isAdmin && store_url && (
           <div className="store-info">
             <span className="store-name">{getStoreName(detected_store)}</span>
             <a 
