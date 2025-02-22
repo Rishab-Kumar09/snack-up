@@ -59,8 +59,11 @@ const AdminDashboard = () => {
       // Calculate initial quantities based on preferences
       const initialWeeklyQuantities = {};
       snacksData.forEach(snack => {
+        // Filter preferences for this snack using snack.id
         const snackPrefs = preferencesData.filter(p => p.snack_id === snack.id);
-        const dailyTotal = snackPrefs.reduce((sum, p) => sum + p.daily_quantity, 0);
+        // Sum up all daily quantities for this snack
+        const dailyTotal = snackPrefs.reduce((sum, p) => sum + (p.daily_quantity || 0), 0);
+        // Set the weekly quantity
         initialWeeklyQuantities[snack.id] = dailyTotal * dayMultiplier;
       });
       setWeeklyQuantities(initialWeeklyQuantities);
