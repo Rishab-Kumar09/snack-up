@@ -11,7 +11,7 @@ import {
   LineElement,
   Title
 } from 'chart.js';
-import config from '../config';
+import { fetchWithAuth } from '../utils/api';
 import './InventoryTracking.css';
 
 ChartJS.register(
@@ -37,6 +37,7 @@ const InventoryTracking = () => {
     notes: ''
   });
   const [currentWeekData, setCurrentWeekData] = useState({});
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -44,26 +45,19 @@ const InventoryTracking = () => {
 
   const fetchData = async () => {
     try {
-      const [trackingRes, statsRes, snacksRes, currentWeekRes] = await Promise.all([
-        fetch(`${config.apiBaseUrl}/inventory/tracking`),
-        fetch(`${config.apiBaseUrl}/inventory/statistics`),
-        fetch(`${config.apiBaseUrl}/snacks`),
-        fetch(`${config.apiBaseUrl}/inventory/tracking/current-week`)
-      ]);
-
-      const [trackingData, statsData, snacksData, currentWeekData] = await Promise.all([
-        trackingRes.json(),
-        statsRes.json(),
-        snacksRes.json(),
-        currentWeekRes.json()
+      const [trackingData, statsData, snacksData] = await Promise.all([
+        fetchWithAuth('/inventory/tracking'),
+        fetchWithAuth('/inventory/statistics'),
+        fetchWithAuth('/snacks')
       ]);
 
       setTrackingData(trackingData);
       setStatistics(statsData);
       setSnacks(snacksData);
-      setCurrentWeekData(currentWeekData);
+      setError(null);
     } catch (error) {
       console.error('Error fetching data:', error);
+      setError(error.message);
     }
   };
 
@@ -89,23 +83,15 @@ const InventoryTracking = () => {
         throw new Error('Please select a snack');
       }
 
-      const response = await fetch(`${config.apiBaseUrl}/inventory/tracking`, {
+      await fetchWithAuth('/inventory/tracking', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           snack_id: newTracking.snack_id,
           wasted_quantity: parseInt(newTracking.wasted_quantity, 10) || 0,
           shortage_quantity: parseInt(newTracking.shortage_quantity, 10) || 0,
           notes: newTracking.notes || ''
-        }),
+        })
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to add tracking record');
-      }
       
       // Refresh all data
       await fetchData();
@@ -118,9 +104,10 @@ const InventoryTracking = () => {
         notes: ''
       });
       setSelectedSnack(null);
+      setError(null);
     } catch (error) {
-      console.error('Error adding tracking record:', error.message);
-      alert(error.message);
+      console.error('Error adding tracking record:', error);
+      setError(error.message);
     }
   };
 
@@ -130,16 +117,16 @@ const InventoryTracking = () => {
     }
 
     try {
-      const response = await fetch(`${config.apiBaseUrl}/inventory/tracking/${recordId}`, {
+      await fetchWithAuth(`/inventory/tracking/${recordId}`, {
         method: 'DELETE'
       });
-
-      if (!response.ok) throw new Error('Failed to delete tracking record');
       
       // Refresh data after successful deletion
-      fetchData();
+      await fetchData();
+      setError(null);
     } catch (error) {
       console.error('Error deleting tracking record:', error);
+      setError(error.message);
     }
   };
 

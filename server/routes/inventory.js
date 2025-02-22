@@ -2,6 +2,22 @@ const express = require('express');
 const router = express.Router();
 const supabase = require('../supabase');
 
+// Middleware to verify admin access
+const verifyAdmin = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.is_admin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+  } catch (error) {
+    console.error('Admin verification error:', error);
+    res.status(500).json({ error: 'Failed to verify admin access' });
+  }
+};
+
+// Apply admin verification to all routes
+router.use(verifyAdmin);
+
 // Get inventory tracking data for all snacks
 router.get('/tracking', async (req, res) => {
   try {
