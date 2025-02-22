@@ -10,12 +10,38 @@ const SnackForm = ({ onSubmit, initialData = {} }) => {
     image_data: initialData.image_data || null
   });
 
+  const [boxCalculator, setBoxCalculator] = useState({
+    boxCost: '',
+    unitCount: ''
+  });
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleBoxCalculatorChange = (e) => {
+    const { name, value } = e.target;
+    setBoxCalculator(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const calculateUnitPrice = () => {
+    const boxCost = parseFloat(boxCalculator.boxCost);
+    const unitCount = parseInt(boxCalculator.unitCount);
+    
+    if (boxCost && unitCount && unitCount > 0) {
+      const unitPrice = (boxCost / unitCount).toFixed(2);
+      setFormData(prev => ({
+        ...prev,
+        price: unitPrice
+      }));
+    }
   };
 
   const handleImageChange = (imageData) => {
@@ -29,7 +55,6 @@ const SnackForm = ({ onSubmit, initialData = {} }) => {
     e.preventDefault();
     onSubmit(formData);
     
-    // Reset form data if it's not in edit mode (no initialData.id)
     if (!initialData.id) {
       setFormData({
         name: '',
@@ -37,6 +62,10 @@ const SnackForm = ({ onSubmit, initialData = {} }) => {
         price: '',
         ingredients: '',
         image_data: null
+      });
+      setBoxCalculator({
+        boxCost: '',
+        unitCount: ''
       });
     }
   };
@@ -66,8 +95,46 @@ const SnackForm = ({ onSubmit, initialData = {} }) => {
         />
       </div>
 
+      <div className="box-calculator">
+        <h4>Per Unit Cost Calculator</h4>
+        <div className="calculator-inputs">
+          <div className="calc-input">
+            <label htmlFor="boxCost">Box Cost ($):</label>
+            <input
+              type="number"
+              id="boxCost"
+              name="boxCost"
+              value={boxCalculator.boxCost}
+              onChange={handleBoxCalculatorChange}
+              step="0.01"
+              min="0"
+              placeholder="Enter box cost"
+            />
+          </div>
+          <div className="calc-input">
+            <label htmlFor="unitCount">Units in Box:</label>
+            <input
+              type="number"
+              id="unitCount"
+              name="unitCount"
+              value={boxCalculator.unitCount}
+              onChange={handleBoxCalculatorChange}
+              min="1"
+              placeholder="Enter number of units"
+            />
+          </div>
+          <button 
+            type="button" 
+            onClick={calculateUnitPrice}
+            className="calculate-button"
+          >
+            Calculate Unit Price
+          </button>
+        </div>
+      </div>
+
       <div className="form-group">
-        <label htmlFor="price">Price:</label>
+        <label htmlFor="price">Price per Unit ($):</label>
         <input
           type="number"
           id="price"
@@ -129,6 +196,40 @@ const SnackForm = ({ onSubmit, initialData = {} }) => {
         textarea {
           min-height: 100px;
           resize: vertical;
+        }
+        .box-calculator {
+          background: #f8f9fa;
+          padding: 1rem;
+          border-radius: 8px;
+          margin-bottom: 1.5rem;
+          border: 1px solid #e9ecef;
+        }
+        .box-calculator h4 {
+          margin: 0 0 1rem 0;
+          color: var(--primary-color);
+        }
+        .calculator-inputs {
+          display: grid;
+          gap: 1rem;
+        }
+        .calc-input {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .calculate-button {
+          background-color: var(--primary-color);
+          color: white;
+          padding: 0.5rem;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 1rem;
+          margin-top: 0.5rem;
+          transition: background-color 0.2s;
+        }
+        .calculate-button:hover {
+          background-color: var(--primary-color-dark);
         }
         .submit-button {
           width: 100%;
