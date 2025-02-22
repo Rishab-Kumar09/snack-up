@@ -44,20 +44,22 @@ const AdminDashboard = () => {
       const user = JSON.parse(localStorage.getItem('user'));
       if (!user || !user.companyId) return;
 
-      const [snacksData, ordersData, usersData] = await Promise.all([
+      const [snacksData, ordersData, usersData, preferencesData] = await Promise.all([
         fetchWithAuth('/snacks'),
         fetchWithAuth(`/orders/company/${user.companyId}`),
-        fetchWithAuth(`/auth/company-users/${user.companyId}`)
+        fetchWithAuth(`/auth/company-users/${user.companyId}`),
+        fetchWithAuth(`/preferences/company/${user.companyId}`)
       ]);
 
       setSnacks(snacksData);
       setOrders(ordersData);
       setCompanyUsers(usersData);
+      setPreferences(preferencesData);
 
       // Calculate initial quantities based on preferences
       const initialWeeklyQuantities = {};
       snacksData.forEach(snack => {
-        const snackPrefs = preferences.filter(p => p.snack_name === snack.name);
+        const snackPrefs = preferencesData.filter(p => p.snack_id === snack.id);
         const dailyTotal = snackPrefs.reduce((sum, p) => sum + p.daily_quantity, 0);
         initialWeeklyQuantities[snack.id] = dailyTotal * dayMultiplier;
       });
