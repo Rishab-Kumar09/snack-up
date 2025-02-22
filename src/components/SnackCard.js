@@ -9,7 +9,6 @@ const SnackCard = ({
   isAdmin,
   preferences,
   onPreferenceUpdate,
-  renderStars,
   onClick
 }) => {
   const {
@@ -63,10 +62,6 @@ const SnackCard = ({
         </div>
         {!isAdmin && (
           <div className="snack-preferences" onClick={e => e.stopPropagation()}>
-            <div className="rating-container">
-              <label>Rating:</label>
-              {renderStars(id)}
-            </div>
             <div className="quantity-container">
               <label>Daily Quantity:</label>
               <input
@@ -75,7 +70,6 @@ const SnackCard = ({
                 value={preferences?.dailyQuantity || 0}
                 onChange={(e) => onPreferenceUpdate(
                   id,
-                  preferences?.rating || 0,
                   parseInt(e.target.value) || 0
                 )}
                 className="quantity-input"
@@ -229,12 +223,10 @@ const SnackCard = ({
           font-size: 0.9rem;
         }
 
-        .rating-container,
         .quantity-container {
           margin-bottom: 0.5rem;
         }
 
-        .rating-container label,
         .quantity-container label {
           display: block;
           margin-bottom: 0.25rem;
