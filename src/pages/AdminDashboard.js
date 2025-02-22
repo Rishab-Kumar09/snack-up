@@ -120,20 +120,12 @@ const AdminDashboard = () => {
 
   const handleSubmit = async (formData) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/snacks`, {
+      const response = await fetchWithAuth('/snacks', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify(formData)
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to add snack');
-      }
-
-      const newSnack = await response.json();
-      setSnacks(prevSnacks => [...prevSnacks, newSnack]);
+      setSnacks(prevSnacks => [...prevSnacks, response]);
       alert('Snack added successfully!');
     } catch (error) {
       console.error('Error adding snack:', error);
