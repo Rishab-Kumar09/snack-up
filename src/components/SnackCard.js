@@ -44,7 +44,7 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           <h3>{truncateText(name, 25)}</h3>
           <p className="price">${parseFloat(price).toFixed(2)}</p>
         </div>
-        <p className="description">{truncateText(description, 60)}</p>
+        <p className="description">{truncateText(description, 50)}</p>
         <div className="dietary-info">
           {isDairyFree && <span className="tag dairy-free">Dairy Free</span>}
           {isVegetarian && !isVegan && <span className="tag vegetarian">Vegetarian</span>}
@@ -76,16 +76,16 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           border: 1px solid #ddd;
           border-radius: 8px;
           overflow: hidden;
-          margin: 0.5rem;
+          margin: 0.25rem;
           background: white;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          width: 200px;
+          width: 180px;
           display: flex;
           flex-direction: column;
         }
         
         .image-container {
-          height: 120px;
+          height: 100px;
           overflow: hidden;
           background: #f5f5f5;
         }
@@ -104,55 +104,55 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           justify-content: center;
           background: #f0f0f0;
           color: #666;
-          font-size: 0.8rem;
+          font-size: 0.7rem;
         }
         
         .content {
-          padding: 0.5rem;
+          padding: 0.35rem;
           display: flex;
           flex-direction: column;
-          gap: 0.25rem;
+          gap: 0.2rem;
         }
 
         .header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 0.25rem;
+          gap: 0.2rem;
         }
         
         h3 {
           margin: 0;
           color: #333;
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           flex: 1;
         }
         
         .description {
           color: #666;
           margin: 0;
-          font-size: 0.75rem;
-          line-height: 1.2;
+          font-size: 0.7rem;
+          line-height: 1.1;
         }
         
         .price {
           font-weight: bold;
           color: #2c5282;
           margin: 0;
-          font-size: 0.85rem;
+          font-size: 0.75rem;
           white-space: nowrap;
         }
         
         .dietary-info {
           display: flex;
-          gap: 0.15rem;
+          gap: 0.1rem;
           flex-wrap: wrap;
         }
         
         .tag {
-          padding: 0.1rem 0.25rem;
+          padding: 0.08rem 0.2rem;
           border-radius: 3px;
-          font-size: 0.6rem;
+          font-size: 0.55rem;
           font-weight: 600;
           display: inline-block;
           white-space: nowrap;
@@ -182,22 +182,22 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-top: 0.15rem;
-          padding-top: 0.15rem;
+          margin-top: 0.1rem;
+          padding-top: 0.1rem;
           border-top: 1px solid #eee;
         }
 
         .store-name {
-          font-size: 0.7rem;
+          font-size: 0.65rem;
           color: #666;
         }
 
         .buy-button {
           background: #2c5282;
           color: white;
-          padding: 0.25rem 0.5rem;
+          padding: 0.2rem 0.4rem;
           border-radius: 3px;
-          font-size: 0.7rem;
+          font-size: 0.65rem;
           text-decoration: none;
           transition: background-color 0.2s;
         }
@@ -208,16 +208,16 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
         
         .admin-controls {
           display: flex;
-          gap: 0.25rem;
-          margin-top: 0.15rem;
+          gap: 0.2rem;
+          margin-top: 0.1rem;
         }
         
         button {
-          padding: 0.25rem 0.4rem;
+          padding: 0.2rem 0.35rem;
           border: none;
           border-radius: 3px;
           cursor: pointer;
-          font-size: 0.7rem;
+          font-size: 0.65rem;
           flex: 1;
         }
         
