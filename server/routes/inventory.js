@@ -49,8 +49,8 @@ router.post('/tracking', async (req, res) => {
     const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
     weekStart.setHours(0, 0, 0, 0);
 
-    // Check if a record already exists for this snack and week
-    const { data: existingRecord, error: fetchError } = await supabase
+    // Check if a tracking record exists for this week
+    const { data: currentWeekData, error: fetchError } = await supabase
       .from('snack_inventory_tracking')
       .select('*')
       .eq('snack_id', snack_id)
@@ -61,16 +61,16 @@ router.post('/tracking', async (req, res) => {
       throw fetchError;
     }
 
-    if (existingRecord) {
+    if (currentWeekData) {
       // Update existing record
       const { error: updateError } = await supabase
         .from('snack_inventory_tracking')
         .update({
           wasted_quantity: wasted_quantity || 0,
           shortage_quantity: shortage_quantity || 0,
-          notes: notes || existingRecord.notes
+          notes: notes || currentWeekData.notes
         })
-        .eq('id', existingRecord.id);
+        .eq('id', currentWeekData.id);
 
       if (updateError) {
         throw updateError;
@@ -78,16 +78,16 @@ router.post('/tracking', async (req, res) => {
 
       res.json({
         message: "Inventory tracking record updated successfully",
-        id: existingRecord.id
+        id: currentWeekData.id
       });
     } else {
       // Create new record
       const { data: newRecord, error: insertError } = await supabase
         .from('snack_inventory_tracking')
         .insert({
-          snack_id,
+          snack_id: snack_id,
           week_start_date: weekStart.toISOString().split('T')[0],
-          initial_quantity: 0, // This will be updated when orders are delivered
+          initial_quantity: 0,
           wasted_quantity: wasted_quantity || 0,
           shortage_quantity: shortage_quantity || 0,
           notes: notes || ''

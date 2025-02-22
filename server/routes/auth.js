@@ -12,34 +12,29 @@ router.post('/login', async (req, res) => {
   }
   
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (error) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Get user details from the users table
-    const { data: userDetails, error: userError } = await supabase
+    const { data: users, error } = await supabase
       .from('users')
       .select('id, name, email, is_admin, is_super_admin, company_id')
       .eq('email', email)
+      .eq('password', password)
       .single();
 
-    if (userError) {
-      return res.status(500).json({ error: 'Failed to fetch user details' });
+    if (error) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (!users) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     res.json({
       user: {
-        id: userDetails.id,
-        name: userDetails.name,
-        email: userDetails.email,
-        isAdmin: userDetails.is_admin,
-        isSuperAdmin: userDetails.is_super_admin,
-        companyId: userDetails.company_id
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        isAdmin: users.is_admin,
+        isSuperAdmin: users.is_super_admin,
+        companyId: users.company_id // This will be a UUID from Supabase
       }
     });
   } catch (error) {
@@ -63,14 +58,15 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    // First, create the auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password
-    });
+    // Check if user already exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
 
-    if (authError) {
-      return res.status(400).json({ error: authError.message });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already registered' });
     }
 
     let userCompanyId = null;
@@ -94,7 +90,7 @@ router.post('/register', async (req, res) => {
         throw companyError;
       }
 
-      userCompanyId = newCompany.id;
+      userCompanyId = newCompany.id; // This will be a UUID
     } else {
       // For customer role, validate the provided companyId
       if (!companyId) {
@@ -103,13 +99,13 @@ router.post('/register', async (req, res) => {
       userCompanyId = companyId;
     }
 
-    // Create user profile
+    // Create user
     const { data: newUser, error: userError } = await supabase
       .from('users')
       .insert({
-        id: authData.user.id, // Use the auth user's ID
         name,
         email,
+        password,
         is_admin: role === 'admin',
         company_id: userCompanyId
       })
@@ -117,8 +113,6 @@ router.post('/register', async (req, res) => {
       .single();
 
     if (userError) {
-      // If user profile creation fails, we should clean up the auth user
-      await supabase.auth.admin.deleteUser(authData.user.id);
       throw userError;
     }
 
@@ -128,7 +122,7 @@ router.post('/register', async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         isAdmin: newUser.is_admin,
-        companyId: newUser.company_id
+        companyId: newUser.company_id // This will be a UUID
       }
     });
   } catch (error) {
