@@ -99,7 +99,10 @@ const AdminDashboard = () => {
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (!response.ok) throw new Error('Failed to update order status');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update order status');
+      }
       
       // Refresh orders after status update
       fetchData();
@@ -592,7 +595,7 @@ const AdminDashboard = () => {
               {orders
                 .filter(order => order.status === 'pending')
                 .map(order => (
-                  <div key={order.order_id} className="order-card new-order">
+                  <div key={order.id} className="order-card new-order">
                     <div className="order-header">
                       <span className={`status-badge ${order.status}`}>
                         {order.status.replace(/_/g, ' ')}
@@ -618,7 +621,7 @@ const AdminDashboard = () => {
                       <select
                         className="status-select"
                         value={order.status}
-                        onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
+                        onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
                       >
                         <option value="pending">Pending</option>
                         <option value="processing">Processing</option>
@@ -627,7 +630,7 @@ const AdminDashboard = () => {
                         <option value="cancelled">Cancelled</option>
                       </select>
                       <button
-                        onClick={() => handleDeleteOrder(order.order_id)}
+                        onClick={() => handleDeleteOrder(order.id)}
                         className="btn btn-danger btn-sm"
                         title="Delete Order"
                       >
@@ -646,7 +649,7 @@ const AdminDashboard = () => {
               {orders
                 .filter(order => order.status !== 'pending')
                 .map(order => (
-                  <div key={order.order_id} className="order-card">
+                  <div key={order.id} className="order-card">
                     <div className="order-header">
                       <span className={`status-badge ${order.status}`}>
                         {order.status.replace(/_/g, ' ')}
@@ -672,7 +675,7 @@ const AdminDashboard = () => {
                       <select
                         className="status-select"
                         value={order.status}
-                        onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
+                        onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
                       >
                         <option value="pending">Pending</option>
                         <option value="processing">Processing</option>
@@ -681,7 +684,7 @@ const AdminDashboard = () => {
                         <option value="cancelled">Cancelled</option>
                       </select>
                       <button
-                        onClick={() => handleDeleteOrder(order.order_id)}
+                        onClick={() => handleDeleteOrder(order.id)}
                         className="btn btn-danger btn-sm"
                         title="Delete Order"
                       >
