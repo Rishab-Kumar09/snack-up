@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import config from '../config';
 import './UserDashboard.css';
+import SnackCard from '../components/SnackCard';
 
 const UserDashboard = () => {
   const [snacks, setSnacks] = useState([]);
@@ -215,38 +216,15 @@ const UserDashboard = () => {
           </div>
           <div className="snacks-grid">
             {snacks.map(snack => (
-              <div key={snack.id} className="snack-card" onClick={(e) => handleSnackCardClick(e, snack)}>
-                {snack.image_data && (
-                  <div className="snack-image-container">
-                    <img src={snack.image_data} alt={snack.name} className="snack-image" />
-                  </div>
-                )}
-                <h3>{snack.name}</h3>
-                <p className="snack-description">Ingredients: {snack.ingredients}</p>
-                {renderDietaryBadges(snack)}
-                
-                <div className="snack-preferences">
-                  <div className="rating-container">
-                    <label>Rating:</label>
-                    {renderStars(snack.id)}
-                  </div>
-                  
-                  <div className="quantity-container">
-                    <label>Daily Quantity:</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={preferences[snack.id]?.dailyQuantity || 0}
-                      onChange={(e) => handlePreferenceUpdate(
-                        snack.id,
-                        preferences[snack.id]?.rating || 0,
-                        parseInt(e.target.value) || 0
-                      )}
-                      className="quantity-input"
-                    />
-                  </div>
-                </div>
-              </div>
+              <SnackCard
+                key={snack.id}
+                snack={snack}
+                isAdmin={false}
+                onClick={(e) => handleSnackCardClick(e, snack)}
+                preferences={preferences[snack.id]}
+                onPreferenceUpdate={handlePreferenceUpdate}
+                renderStars={renderStars}
+              />
             ))}
           </div>
         </section>

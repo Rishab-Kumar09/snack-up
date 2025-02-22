@@ -1,7 +1,17 @@
 import React from 'react';
 import { getStoreName } from '../utils/storeDetection';
 
-const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) => {
+const SnackCard = ({ 
+  snack, 
+  onEdit, 
+  onDelete, 
+  onToggleAvailability, 
+  isAdmin,
+  preferences,
+  onPreferenceUpdate,
+  renderStars,
+  onClick
+}) => {
   const {
     id,
     name,
@@ -31,7 +41,7 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
   };
 
   return (
-    <div className={`snack-card ${!is_available ? 'unavailable' : ''}`}>
+    <div className={`snack-card ${!is_available ? 'unavailable' : ''}`} onClick={onClick}>
       <div className="image-container">
         {image_data ? (
           <img src={image_data} alt={name} className="snack-image" />
@@ -44,27 +54,61 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           <h3>{truncateText(name, 25)}</h3>
           <p className="price">${parseFloat(price).toFixed(2)}</p>
         </div>
-        <p className="description">{truncateText(description, 50)}</p>
+        <p className="description">{truncateText(ingredients, 60)}</p>
         <div className="dietary-info">
           {isDairyFree && <span className="tag dairy-free">Dairy Free</span>}
           {isVegetarian && !isVegan && <span className="tag vegetarian">Vegetarian</span>}
           {isVegan && <span className="tag vegan">Vegan</span>}
           {!isVegetarian && <span className="tag non-veg">Non-Veg</span>}
         </div>
+        {!isAdmin && (
+          <div className="snack-preferences" onClick={e => e.stopPropagation()}>
+            <div className="rating-container">
+              <label>Rating:</label>
+              {renderStars(id)}
+            </div>
+            <div className="quantity-container">
+              <label>Daily Quantity:</label>
+              <input
+                type="number"
+                min="0"
+                value={preferences?.dailyQuantity || 0}
+                onChange={(e) => onPreferenceUpdate(
+                  id,
+                  preferences?.rating || 0,
+                  parseInt(e.target.value) || 0
+                )}
+                className="quantity-input"
+              />
+            </div>
+          </div>
+        )}
         {store_url && (
           <div className="store-info">
             <span className="store-name">{getStoreName(detected_store)}</span>
-            <a href={store_url} target="_blank" rel="noopener noreferrer" className="buy-button">
+            <a 
+              href={store_url} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="buy-button"
+              onClick={e => e.stopPropagation()}
+            >
               Buy Now
             </a>
           </div>
         )}
         {isAdmin && (
           <div className="admin-controls">
-            <button onClick={(e) => onEdit(snack, e)} className="edit-button">
+            <button onClick={(e) => {
+              e.stopPropagation();
+              onEdit(snack, e);
+            }} className="edit-button">
               Edit
             </button>
-            <button onClick={handleDelete} className="delete-button">
+            <button onClick={(e) => {
+              e.stopPropagation();
+              handleDelete();
+            }} className="delete-button">
               Delete
             </button>
           </div>
@@ -104,7 +148,7 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           justify-content: center;
           background: #f0f0f0;
           color: #666;
-          font-size: 0.7rem;
+          font-size: 0.8rem;
         }
         
         .content {
@@ -145,7 +189,7 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
         
         .dietary-info {
           display: flex;
-          gap: 0.1rem;
+          gap: 0.15rem;
           flex-wrap: wrap;
         }
         
@@ -178,6 +222,34 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           color: #C62828;
         }
 
+        .snack-preferences {
+          margin-top: 0.5rem;
+          padding-top: 0.5rem;
+          border-top: 1px solid #eee;
+          font-size: 0.8rem;
+        }
+
+        .rating-container,
+        .quantity-container {
+          margin-bottom: 0.25rem;
+        }
+
+        .rating-container label,
+        .quantity-container label {
+          display: block;
+          margin-bottom: 0.15rem;
+          color: #666;
+          font-weight: 500;
+        }
+
+        .quantity-input {
+          width: 60px;
+          padding: 0.25rem;
+          border: 1px solid #ddd;
+          border-radius: 3px;
+          font-size: 0.8rem;
+        }
+
         .store-info {
           display: flex;
           justify-content: space-between;
@@ -205,13 +277,13 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
         .buy-button:hover {
           background: #1a365d;
         }
-
+        
         .admin-controls {
           display: flex;
           gap: 0.25rem;
           margin-top: 0.15rem;
         }
-
+        
         button {
           padding: 0.25rem 0.4rem;
           border: none;
