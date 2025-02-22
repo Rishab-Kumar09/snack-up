@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { fetchWithAuth } from '../utils/api';
 import config from '../config';
 import './AdminDashboard.css';
 import InventoryTracking from '../components/InventoryTracking';
@@ -40,50 +41,30 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      if (!user || !user.companyId) {
-        throw new Error('No company ID found');
-      }
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user.companyId) return;
 
-      // Ensure companyId is a valid UUID
-      const companyUUID = user.companyId.toString().length === 36 ? user.companyId : null;
-      if (!companyUUID) {
-        throw new Error('Invalid company ID format');
-      }
-
-      const [snacksResponse, ordersResponse, preferencesResponse, usersResponse] = await Promise.all([
-        fetch(`${config.apiBaseUrl}/snacks`),
-        fetch(`${config.apiBaseUrl}/orders/company/${companyUUID}`),
-        fetch(`${config.apiBaseUrl}/preferences/company/${companyUUID}`),
-        fetch(`${config.apiBaseUrl}/auth/company-users/${companyUUID}`)
-      ]);
-
-      if (!snacksResponse.ok) throw new Error('Failed to fetch snacks');
-      if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
-      if (!preferencesResponse.ok) throw new Error('Failed to fetch preferences');
-      if (!usersResponse.ok) throw new Error('Failed to fetch company users');
-
-      const [snacksData, ordersData, preferencesData, usersData] = await Promise.all([
-        snacksResponse.json(),
-        ordersResponse.json(),
-        preferencesResponse.json(),
-        usersResponse.json()
+      const [snacksData, ordersData, usersData] = await Promise.all([
+        fetchWithAuth('/snacks'),
+        fetchWithAuth(`/orders/company/${user.companyId}`),
+        fetchWithAuth(`/auth/company-users/${user.companyId}`)
       ]);
 
       setSnacks(snacksData);
       setOrders(ordersData);
-      setPreferences(preferencesData);
       setCompanyUsers(usersData);
 
       // Calculate initial quantities based on preferences
       const initialWeeklyQuantities = {};
       snacksData.forEach(snack => {
-        const snackPrefs = preferencesData.filter(p => p.snack_name === snack.name);
+        const snackPrefs = preferences.filter(p => p.snack_name === snack.name);
         const dailyTotal = snackPrefs.reduce((sum, p) => sum + p.daily_quantity, 0);
         initialWeeklyQuantities[snack.id] = dailyTotal * dayMultiplier;
       });
       setWeeklyQuantities(initialWeeklyQuantities);
-    } catch (err) {
-      setError(err.message);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -325,23 +306,15 @@ const AdminDashboard = () => {
   const handleNewAdminSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${config.apiBaseUrl}/auth/add-admin`, {
+      const response = await fetchWithAuth('/auth/add-admin', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           ...newAdminData,
           companyId: user.companyId
-        }),
+        })
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to add admin');
-      }
-
-      // Reset form and refresh data
+      setCompanyUsers(prevUsers => [...prevUsers, response.user]);
       setNewAdminData({ name: '', email: '', password: '' });
       fetchData();
       setError('');

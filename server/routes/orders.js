@@ -7,16 +7,27 @@ router.get('/company/:companyId', async (req, res) => {
   const { companyId } = req.params;
 
   try {
-    // First, verify if the user is an admin
+    // First, get the user from the session/token
+    const { user } = req;
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verify if the user is an admin for this company
     const { data: adminUser, error: adminError } = await supabase
       .from('users')
-      .select('is_admin')
-      .eq('company_id', companyId)
-      .eq('is_admin', true)
+      .select('is_admin, company_id')
+      .eq('id', user.id)
       .single();
 
-    if (adminError || !adminUser) {
-      return res.status(403).json({ error: 'Unauthorized access' });
+    if (adminError) {
+      console.error('Error checking admin status:', adminError);
+      return res.status(500).json({ error: 'Failed to verify admin status' });
+    }
+
+    if (!adminUser || !adminUser.is_admin || adminUser.company_id !== companyId) {
+      return res.status(403).json({ error: 'Unauthorized: Admin access required' });
     }
 
     // Fetch orders for the company
