@@ -152,4 +152,57 @@ router.get('/company-users/:companyId', async (req, res) => {
   }
 });
 
+// Add admin endpoint
+router.post('/add-admin', async (req, res) => {
+  const { name, email, password, companyId } = req.body;
+
+  // Basic validation
+  if (!name || !email || !password || !companyId) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  try {
+    // Check if user already exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Create admin user
+    const { data: newUser, error: userError } = await supabase
+      .from('users')
+      .insert({
+        name,
+        email,
+        password,
+        is_admin: true,
+        company_id: companyId
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      throw userError;
+    }
+
+    res.status(201).json({
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        isAdmin: newUser.is_admin,
+        companyId: newUser.company_id
+      }
+    });
+  } catch (error) {
+    console.error('Error adding admin:', error);
+    res.status(500).json({ error: 'Failed to add admin' });
+  }
+});
+
 module.exports = router;
