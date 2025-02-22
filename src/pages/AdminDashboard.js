@@ -268,7 +268,8 @@ const AdminDashboard = () => {
         .filter(snack => weeklyQuantities[snack.id] > 0)
         .map(snack => ({
           snackId: snack.id,
-          quantity: weeklyQuantities[snack.id]
+          quantity: weeklyQuantities[snack.id],
+          price: snack.price
         }));
 
       if (orderItems.length === 0) {
