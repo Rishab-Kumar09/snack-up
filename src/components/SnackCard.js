@@ -129,7 +129,7 @@ const SnackCard = ({
         }
         
         .image-container {
-          height: 160px;
+          height: 180px;
           overflow: hidden;
           background: #f5f5f5;
         }
@@ -152,51 +152,51 @@ const SnackCard = ({
         }
         
         .content {
-          padding: 0.5rem;
+          padding: 1rem;
           display: flex;
           flex-direction: column;
-          gap: 0.25rem;
+          gap: 0.5rem;
         }
 
         .header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 0.25rem;
+          gap: 0.5rem;
         }
         
         h3 {
           margin: 0;
           color: #333;
-          font-size: 0.9rem;
+          font-size: 1.1rem;
           flex: 1;
         }
         
         .description {
           color: #666;
           margin: 0;
-          font-size: 0.75rem;
-          line-height: 1.2;
+          font-size: 0.9rem;
+          line-height: 1.4;
         }
         
         .price {
           font-weight: bold;
           color: #2c5282;
           margin: 0;
-          font-size: 0.85rem;
+          font-size: 1rem;
           white-space: nowrap;
         }
         
         .dietary-info {
           display: flex;
-          gap: 0.15rem;
+          gap: 0.25rem;
           flex-wrap: wrap;
         }
         
         .tag {
-          padding: 0.1rem 0.25rem;
+          padding: 0.2rem 0.4rem;
           border-radius: 3px;
-          font-size: 0.6rem;
+          font-size: 0.75rem;
           font-weight: 600;
           display: inline-block;
           white-space: nowrap;
@@ -223,53 +223,53 @@ const SnackCard = ({
         }
 
         .snack-preferences {
-          margin-top: 0.5rem;
-          padding-top: 0.5rem;
+          margin-top: 0.75rem;
+          padding-top: 0.75rem;
           border-top: 1px solid #eee;
-          font-size: 0.8rem;
+          font-size: 0.9rem;
         }
 
         .rating-container,
         .quantity-container {
-          margin-bottom: 0.25rem;
+          margin-bottom: 0.5rem;
         }
 
         .rating-container label,
         .quantity-container label {
           display: block;
-          margin-bottom: 0.15rem;
+          margin-bottom: 0.25rem;
           color: #666;
           font-weight: 500;
         }
 
         .quantity-input {
-          width: 60px;
-          padding: 0.25rem;
+          width: 70px;
+          padding: 0.35rem;
           border: 1px solid #ddd;
           border-radius: 3px;
-          font-size: 0.8rem;
+          font-size: 0.9rem;
         }
 
         .store-info {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-top: 0.15rem;
-          padding-top: 0.15rem;
+          margin-top: 0.5rem;
+          padding-top: 0.5rem;
           border-top: 1px solid #eee;
         }
 
         .store-name {
-          font-size: 0.7rem;
+          font-size: 0.85rem;
           color: #666;
         }
 
         .buy-button {
           background: #2c5282;
           color: white;
-          padding: 0.25rem 0.5rem;
+          padding: 0.35rem 0.75rem;
           border-radius: 3px;
-          font-size: 0.7rem;
+          font-size: 0.85rem;
           text-decoration: none;
           transition: background-color 0.2s;
         }
@@ -285,11 +285,11 @@ const SnackCard = ({
         }
         
         button {
-          padding: 0.25rem 0.4rem;
+          padding: 0.35rem 0.75rem;
           border: none;
           border-radius: 3px;
           cursor: pointer;
-          font-size: 0.7rem;
+          font-size: 0.85rem;
           flex: 1;
         }
         
