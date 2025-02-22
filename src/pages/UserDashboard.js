@@ -235,51 +235,22 @@ const UserDashboard = () => {
         </section>
       ) : (
         <section className="orders-section">
-          <h2>My Order History</h2>
-          <div className="orders-grid">
-            {orders.length > 0 ? (
-              orders.map(order => (
-                <div key={order.order_id} className="order-card">
-                  <div className="order-header">
-                    <span className={`status-badge ${order.status}`}>
-                      {order.status.replace(/_/g, ' ')}
-                    </span>
+          <h2>My Daily Preferences</h2>
+          <div className="preferences-summary">
+            {snacks.map(snack => {
+              const quantity = preferences[snack.id]?.dailyQuantity || 0;
+              if (quantity > 0) {
+                return (
+                  <div key={snack.id} className="preference-summary-item">
+                    <span className="snack-name">{snack.name}</span>
+                    <span className="quantity">{quantity} per day</span>
                   </div>
-                  <div className="order-details">
-                    <p>Date: {new Date(order.created_at).toLocaleString()}</p>
-                    <p className="total-cost">Total Cost: ${order.total_cost?.toFixed(2) || '0.00'}</p>
-                  </div>
-                  <div className="order-items">
-                    <h4>Items</h4>
-                    <ul>
-                      {order.items.map((item, index) => (
-                        <li key={index}>
-                          {item.quantity}x {item.snack_name} (${item.price_per_unit?.toFixed(2) || '0.00'} each)
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="no-orders-message">
-                <h3>No Orders Yet</h3>
-                <p>Your daily preferred quantities:</p>
-                <div className="preferences-summary">
-                  {snacks.map(snack => {
-                    const quantity = preferences[snack.id]?.dailyQuantity || 0;
-                    if (quantity > 0) {
-                      return (
-                        <div key={snack.id} className="preference-summary-item">
-                          <span className="snack-name">{snack.name}</span>
-                          <span className="quantity">{quantity} per day</span>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }).filter(Boolean)}
-                </div>
-              </div>
+                );
+              }
+              return null;
+            }).filter(Boolean)}
+            {Object.keys(preferences).length === 0 && (
+              <p className="no-preferences">No daily preferences set yet. Go to the Snacks tab to set your preferences.</p>
             )}
           </div>
         </section>
