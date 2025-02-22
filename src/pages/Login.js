@@ -29,11 +29,14 @@ const Login = () => {
         }
       } catch (err) {
         console.error('Failed to fetch companies:', err);
+        setError('Failed to load companies. Please try again later.');
       }
     };
 
-    fetchCompanies();
-  }, []);
+    if (!isLoginMode) {
+      fetchCompanies();
+    }
+  }, [isLoginMode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -41,6 +44,8 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
+    // Clear error when user starts typing
+    setError('');
   };
 
   const handleSubmit = async (e) => {
@@ -60,26 +65,28 @@ const Login = () => {
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Ensure companyId is stored as a string
-        const userData = {
-          ...data.user,
-          companyId: data.user.companyId ? data.user.companyId.toString() : null
-        };
-        localStorage.setItem('user', JSON.stringify(userData));
-        
-        if (userData.isSuperAdmin) {
-          navigate('/superadmin');
-        } else if (userData.isAdmin) {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+
+      // Store user data in localStorage
+      const userData = {
+        ...data.user,
+        companyId: data.user.companyId ? data.user.companyId.toString() : null
+      };
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Navigate based on user role
+      if (userData.isSuperAdmin) {
+        navigate('/superadmin');
+      } else if (userData.isAdmin) {
+        navigate('/admin');
       } else {
-        setError(data.error || (isLoginMode ? 'Invalid credentials' : 'Registration failed'));
+        navigate('/dashboard');
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      console.error('Auth error:', err);
+      setError(err.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -109,7 +116,11 @@ const Login = () => {
         </p>
         
         <form onSubmit={handleSubmit} className="login-form">
-          {error && <div className="alert alert-error">{error}</div>}
+          {error && (
+            <div className="alert alert-error" role="alert">
+              {error}
+            </div>
+          )}
           
           {!isLoginMode && (
             <div className="form-group">
@@ -123,6 +134,7 @@ const Login = () => {
                 onChange={handleChange}
                 required={!isLoginMode}
                 disabled={loading}
+                placeholder="Enter your full name"
               />
             </div>
           )}
@@ -138,6 +150,7 @@ const Login = () => {
               onChange={handleChange}
               required
               disabled={loading}
+              placeholder="Enter your email"
             />
           </div>
 
@@ -152,6 +165,8 @@ const Login = () => {
               onChange={handleChange}
               required
               disabled={loading}
+              placeholder="Enter your password"
+              minLength="6"
             />
           </div>
 
