@@ -68,18 +68,10 @@ const UserDashboard = () => {
         dailyQuantity: numericQuantity
       };
 
-      const response = await fetch(`${config.apiBaseUrl}/preferences`, {
+      await fetchWithAuth('/preferences', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(requestBody),
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to update preference');
-      }
 
       setPreferences(prev => ({
         ...prev,
