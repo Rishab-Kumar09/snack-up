@@ -37,8 +37,8 @@ router.post('/tracking', async (req, res) => {
   const { snack_id, wasted_quantity, shortage_quantity, notes } = req.body;
   
   // Validate required fields
-  if (!snack_id || typeof snack_id !== 'number') {
-    return res.status(400).json({ error: 'Valid snack ID is required' });
+  if (!snack_id) {
+    return res.status(400).json({ error: 'Snack ID is required' });
   }
 
   // Validate that we don't have both wastage and shortage

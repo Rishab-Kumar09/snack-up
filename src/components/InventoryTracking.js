@@ -75,7 +75,7 @@ const InventoryTracking = () => {
     }));
     
     // Find current week's data for selected snack
-    const snackData = currentWeekData.tracking?.find(t => t.snack_id === parseInt(snackId));
+    const snackData = currentWeekData.tracking?.find(t => t.snack_id === snackId);
     if (snackData) {
       setSelectedSnack(snackData);
     }
@@ -95,7 +95,7 @@ const InventoryTracking = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          snack_id: parseInt(newTracking.snack_id, 10), // Ensure base-10 integer parsing
+          snack_id: newTracking.snack_id,
           wasted_quantity: parseInt(newTracking.wasted_quantity, 10) || 0,
           shortage_quantity: parseInt(newTracking.shortage_quantity, 10) || 0,
           notes: newTracking.notes || ''
