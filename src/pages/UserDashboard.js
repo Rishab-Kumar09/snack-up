@@ -20,6 +20,7 @@ const UserDashboard = () => {
 
   const fetchData = async () => {
     try {
+      console.log('Fetching data for user:', user);
       const [snacksResponse, preferencesResponse, ordersResponse] = await Promise.all([
         fetch(`${config.apiBaseUrl}/snacks`),
         fetch(`${config.apiBaseUrl}/preferences/user/${user.id}`),
@@ -36,6 +37,8 @@ const UserDashboard = () => {
         ordersResponse.json()
       ]);
 
+      console.log('Orders data received:', ordersData);
+      
       setSnacks(snacksData);
       setOrders(ordersData);
       
@@ -49,6 +52,7 @@ const UserDashboard = () => {
       });
       setPreferences(prefsObj);
     } catch (err) {
+      console.error('Error in fetchData:', err);
       setError(err.message);
     } finally {
       setLoading(false);
