@@ -3,6 +3,7 @@ import config from '../config';
 import './AdminDashboard.css';
 import InventoryTracking from '../components/InventoryTracking';
 import SnackForm from '../components/SnackForm';
+import SnackCard from '../components/SnackCard';
 
 const AdminDashboard = () => {
   const [snacks, setSnacks] = useState([]);
@@ -120,17 +121,21 @@ const AdminDashboard = () => {
       const response = await fetch(`${config.apiBaseUrl}/snacks`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formData)
       });
 
-      if (!response.ok) throw new Error('Failed to add snack');
-      
-      // Refresh snacks list
-      fetchData();
-    } catch (err) {
-      setError(err.message);
+      if (!response.ok) {
+        throw new Error('Failed to add snack');
+      }
+
+      const newSnack = await response.json();
+      setSnacks(prevSnacks => [...prevSnacks, newSnack]);
+      alert('Snack added successfully!');
+    } catch (error) {
+      console.error('Error adding snack:', error);
+      alert('Failed to add snack. Please try again.');
     }
   };
 
@@ -200,7 +205,9 @@ const AdminDashboard = () => {
   };
 
   const handleEditClick = (snack, e) => {
-    e.stopPropagation();
+    if (e) {
+      e.stopPropagation();
+    }
     setEditMode(true);
     setEditedSnack({
       id: snack.id,
@@ -377,6 +384,52 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleToggleAvailability = async (snackId, isAvailable) => {
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/snacks/${snackId}/availability`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isAvailable })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update snack availability');
+      }
+
+      // Update the snack's availability in the local state
+      setSnacks(prevSnacks =>
+        prevSnacks.map(snack =>
+          snack.id === snackId
+            ? { ...snack, is_available: isAvailable }
+            : snack
+        )
+      );
+    } catch (error) {
+      console.error('Error updating snack availability:', error);
+      alert('Failed to update snack availability. Please try again.');
+    }
+  };
+
+  const handleDeleteSnack = async (snackId) => {
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/snacks/${snackId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete snack');
+      }
+
+      // Remove the snack from the state
+      setSnacks(prevSnacks => prevSnacks.filter(snack => snack.id !== snackId));
+    } catch (error) {
+      console.error('Error deleting snack:', error);
+      alert('Failed to delete snack. Please try again.');
+    }
+  };
+
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="alert alert-error">{error}</div>;
 
@@ -509,24 +562,14 @@ const AdminDashboard = () => {
             <h2>Current Inventory</h2>
             <div className="inventory-grid">
               {snacks.map(snack => (
-                <div key={snack.id} className="inventory-card">
-                  <div className="inventory-header">
-                    <h3>{snack.name}</h3>
-                    <button className="btn btn-secondary btn-sm" onClick={(e) => handleEditClick(snack, e)}>
-                      Edit
-                    </button>
-                  </div>
-                  {snack.image_data && (
-                    <div className="snack-image-container">
-                      <img src={snack.image_data} alt={snack.name} className="snack-image" />
-                    </div>
-                  )}
-                  <p className="inventory-description">Ingredients: {snack.ingredients}</p>
-                  {renderDietaryBadges(snack)}
-                  <div className="inventory-details">
-                    <span className="price">${snack.price}</span>
-                  </div>
-                </div>
+                <SnackCard
+                  key={snack.id}
+                  snack={snack}
+                  onEdit={handleEditClick}
+                  onDelete={handleDeleteSnack}
+                  onToggleAvailability={handleToggleAvailability}
+                  isAdmin={true}
+                />
               ))}
             </div>
           </section>

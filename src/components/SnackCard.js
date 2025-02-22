@@ -1,6 +1,6 @@
 import React from 'react';
 
-const SnackCard = ({ snack, onEdit, onToggleAvailability, isAdmin }) => {
+const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) => {
   const {
     id,
     name,
@@ -13,6 +13,12 @@ const SnackCard = ({ snack, onEdit, onToggleAvailability, isAdmin }) => {
     isVegan,
     image_data
   } = snack;
+
+  const handleDelete = () => {
+    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
+      onDelete(id);
+    }
+  };
 
   return (
     <div className={`snack-card ${!is_available ? 'unavailable' : ''}`}>
@@ -32,19 +38,17 @@ const SnackCard = ({ snack, onEdit, onToggleAvailability, isAdmin }) => {
         </p>
         <div className="dietary-info">
           {isDairyFree && <span className="tag dairy-free">Dairy Free</span>}
-          {isVegetarian && <span className="tag vegetarian">Vegetarian</span>}
+          {isVegetarian && !isVegan && <span className="tag vegetarian">Vegetarian</span>}
           {isVegan && <span className="tag vegan">Vegan</span>}
+          {!isVegetarian && <span className="tag non-veg">Non-Vegetarian</span>}
         </div>
         {isAdmin && (
           <div className="admin-controls">
-            <button onClick={() => onEdit(snack)} className="edit-button">
+            <button onClick={(e) => onEdit(snack, e)} className="edit-button">
               Edit
             </button>
-            <button
-              onClick={() => onToggleAvailability(id, !is_available)}
-              className={`availability-button ${is_available ? 'mark-unavailable' : 'mark-available'}`}
-            >
-              {is_available ? 'Mark Unavailable' : 'Mark Available'}
+            <button onClick={handleDelete} className="delete-button">
+              Delete
             </button>
           </div>
         )}
@@ -122,6 +126,9 @@ const SnackCard = ({ snack, onEdit, onToggleAvailability, isAdmin }) => {
           padding: 0.25rem 0.5rem;
           border-radius: 4px;
           font-size: 0.8rem;
+          font-weight: 500;
+          margin-right: 0.5rem;
+          display: inline-block;
         }
         
         .dairy-free {
@@ -139,9 +146,15 @@ const SnackCard = ({ snack, onEdit, onToggleAvailability, isAdmin }) => {
           color: #7B1FA2;
         }
         
+        .non-veg {
+          background: #FFEBEE;
+          color: #C62828;
+        }
+        
         .admin-controls {
           display: flex;
           gap: 0.5rem;
+          margin-top: 1rem;
         }
         
         button {
@@ -150,6 +163,7 @@ const SnackCard = ({ snack, onEdit, onToggleAvailability, isAdmin }) => {
           border-radius: 4px;
           cursor: pointer;
           font-size: 0.9rem;
+          flex: 1;
         }
         
         .edit-button {
@@ -161,18 +175,13 @@ const SnackCard = ({ snack, onEdit, onToggleAvailability, isAdmin }) => {
           background: #45a049;
         }
         
-        .availability-button {
-          flex: 1;
-        }
-        
-        .mark-unavailable {
-          background: #f44336;
+        .delete-button {
+          background: #dc3545;
           color: white;
         }
         
-        .mark-available {
-          background: #2196F3;
-          color: white;
+        .delete-button:hover {
+          background: #c82333;
         }
         
         .unavailable {

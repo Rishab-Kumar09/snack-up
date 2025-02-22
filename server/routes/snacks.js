@@ -79,21 +79,21 @@ router.post('/', async (req, res) => {
       .from('snacks')
       .insert([
         { name, description, price: numericPrice, ingredients, is_available: 1, image_data: image_data || null }
-      ]);
+      ])
+      .select()
+      .single();
     
     if (error) {
       console.error('Error adding snack:', error);
       return res.status(500).json({ error: 'Failed to add snack' });
     }
 
+    if (!data) {
+      return res.status(500).json({ error: 'Failed to create snack' });
+    }
+
     res.status(201).json({
-      id: data[0].id,
-      name,
-      description,
-      price: numericPrice,
-      ingredients,
-      is_available: 1,
-      image_data: image_data || null,
+      ...data,
       ...classifySnack(ingredients)
     });
   } catch (err) {
@@ -141,17 +141,19 @@ router.put('/:id/availability', async (req, res) => {
   const { data, error } = await supabase
     .from('snacks')
     .update({ is_available: isAvailable ? 1 : 0 })
-    .eq('id', id);
+    .eq('id', id)
+    .select()
+    .single();
   
   if (error) {
     return res.status(500).json({ error: 'Failed to update snack availability' });
   }
 
-  if (data.length === 0) {
+  if (!data) {
     return res.status(404).json({ error: 'Snack not found' });
   }
 
-  res.json({ message: 'Snack availability updated successfully' });
+  res.json({ message: 'Snack availability updated successfully', snack: data });
 });
 
 // Add new endpoint for updating snack details
@@ -207,6 +209,33 @@ router.put('/:id', async (req, res) => {
   } catch (err) {
     console.error('Error in snack update:', err);
     res.status(500).json({ error: 'An unexpected error occurred while updating the snack' });
+  }
+});
+
+// Delete snack
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Delete related records first
+    await supabase.from('preferences').delete().eq('snack_id', id);
+    await supabase.from('order_items').delete().eq('snack_id', id);
+    await supabase.from('snack_inventory_tracking').delete().eq('snack_id', id);
+
+    // Delete the snack
+    const { error } = await supabase
+      .from('snacks')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
+
+    res.json({ message: 'Snack deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting snack:', error);
+    res.status(500).json({ error: 'Failed to delete snack' });
   }
 });
 
