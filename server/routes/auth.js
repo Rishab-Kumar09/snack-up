@@ -12,29 +12,33 @@ router.post('/login', async (req, res) => {
   }
   
   try {
-    const { data: users, error } = await supabase
+    // First find user by email only
+    const { data: user, error } = await supabase
       .from('users')
-      .select('id, name, email, is_admin, is_super_admin, company_id')
+      .select('id, name, email, password, is_admin, is_super_admin, company_id')
       .eq('email', email)
-      .eq('password', password)
       .single();
 
-    if (error) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    
-    if (!users) {
+    if (error || !user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Compare passwords
+    if (user.password !== password) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Don't send password back to client
+    const { password: _, ...userWithoutPassword } = user;
+
     res.json({
       user: {
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        isAdmin: users.is_admin,
-        isSuperAdmin: users.is_super_admin,
-        companyId: users.company_id // This will be a UUID from Supabase
+        id: userWithoutPassword.id,
+        name: userWithoutPassword.name,
+        email: userWithoutPassword.email,
+        isAdmin: userWithoutPassword.is_admin,
+        isSuperAdmin: userWithoutPassword.is_super_admin,
+        companyId: userWithoutPassword.company_id
       }
     });
   } catch (error) {
@@ -202,6 +206,48 @@ router.post('/add-admin', async (req, res) => {
   } catch (error) {
     console.error('Error adding admin:', error);
     res.status(500).json({ error: 'Failed to add admin' });
+  }
+});
+
+// Remove admin endpoint
+router.put('/remove-admin/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const { companyId } = req.body;
+
+  if (!userId || !companyId) {
+    return res.status(400).json({ error: 'User ID and company ID are required' });
+  }
+
+  try {
+    // Check if user exists and is from the same company
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, is_admin, company_id')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.company_id !== companyId) {
+      return res.status(403).json({ error: 'Cannot remove admin from different company' });
+    }
+
+    // Update user to remove admin status
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ is_admin: false })
+      .eq('id', userId);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    res.json({ message: 'Admin removed successfully' });
+  } catch (error) {
+    console.error('Error removing admin:', error);
+    res.status(500).json({ error: 'Failed to remove admin' });
   }
 });
 
