@@ -18,35 +18,9 @@ const UserDashboard = () => {
     fetchData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Add polling for orders when orders tab is active
-  useEffect(() => {
-    let intervalId;
-    if (activeTab === 'orders') {
-      // Initial fetch
-      fetchOrders();
-      // Set up polling every 5 seconds
-      intervalId = setInterval(fetchOrders, 5000);
-    }
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fetchOrders = async () => {
-    try {
-      const ordersResponse = await fetch(`${config.apiBaseUrl}/orders/user/${user.id}`);
-      if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
-      const ordersData = await ordersResponse.json();
-      setOrders(ordersData);
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-    }
-  };
-
   const fetchData = async () => {
     try {
+      console.log('Fetching data for user:', user.id);
       const [snacksResponse, preferencesResponse, ordersResponse] = await Promise.all([
         fetch(`${config.apiBaseUrl}/snacks`),
         fetch(`${config.apiBaseUrl}/preferences/user/${user.id}`),
@@ -63,6 +37,7 @@ const UserDashboard = () => {
         ordersResponse.json()
       ]);
 
+      console.log('Received orders data:', ordersData);
       setSnacks(snacksData);
       setOrders(ordersData);
       
@@ -70,12 +45,12 @@ const UserDashboard = () => {
       const prefsObj = {};
       preferencesData.forEach(pref => {
         prefsObj[pref.snack_id] = {
-          rating: pref.rating,
           dailyQuantity: pref.daily_quantity
         };
       });
       setPreferences(prefsObj);
     } catch (err) {
+      console.error('Error in fetchData:', err);
       setError(err.message);
     } finally {
       setLoading(false);

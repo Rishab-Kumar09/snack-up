@@ -70,6 +70,7 @@ router.get('/user/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
+    console.log('Fetching orders for user:', userId);
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
@@ -86,8 +87,11 @@ router.get('/user/:userId', async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error('Error fetching user orders:', error);
       throw error;
     }
+
+    console.log('Raw orders data:', orders);
 
     // Format orders for response
     const formattedOrders = orders.map(order => ({
@@ -102,6 +106,7 @@ router.get('/user/:userId', async (req, res) => {
       }))
     }));
 
+    console.log('Formatted orders:', formattedOrders);
     res.json(formattedOrders);
   } catch (error) {
     console.error('Error fetching user orders:', error);
