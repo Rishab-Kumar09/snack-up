@@ -522,7 +522,7 @@ const AdminDashboard = () => {
                         <ul>
                           {order.items.map((item, index) => (
                             <li key={index}>
-                              {item.quantity}x {item.snack_name} (${item.price} each)
+                              {item.quantity}x {item.snack_name} (${item.price_per_unit} each)
                             </li>
                           ))}
                         </ul>
@@ -609,7 +609,7 @@ const AdminDashboard = () => {
                       <ul>
                         {order.items.map((item, index) => (
                           <li key={index}>
-                            {item.quantity}x {item.snack_name} (${item.price} each)
+                            {item.quantity}x {item.snack_name} (${item.price_per_unit} each)
                           </li>
                         ))}
                       </ul>
@@ -663,7 +663,7 @@ const AdminDashboard = () => {
                       <ul>
                         {order.items.map((item, index) => (
                           <li key={index}>
-                            {item.quantity}x {item.snack_name} (${item.price} each)
+                            {item.quantity}x {item.snack_name} (${item.price_per_unit} each)
                           </li>
                         ))}
                       </ul>
