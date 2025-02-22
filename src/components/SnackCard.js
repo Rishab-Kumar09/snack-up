@@ -76,16 +76,16 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           border: 1px solid #ddd;
           border-radius: 8px;
           overflow: hidden;
-          margin: 0.75rem;
+          margin: 0.5rem;
           background: white;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          width: 280px;
+          width: 200px;
           display: flex;
           flex-direction: column;
         }
         
         .image-container {
-          height: 160px;
+          height: 120px;
           overflow: hidden;
           background: #f5f5f5;
         }
@@ -104,54 +104,55 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           justify-content: center;
           background: #f0f0f0;
           color: #666;
+          font-size: 0.8rem;
         }
         
         .content {
-          padding: 0.75rem;
+          padding: 0.5rem;
           display: flex;
           flex-direction: column;
-          gap: 0.4rem;
+          gap: 0.25rem;
         }
 
         .header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.25rem;
         }
         
         h3 {
           margin: 0;
           color: #333;
-          font-size: 1.1rem;
+          font-size: 0.9rem;
           flex: 1;
         }
         
         .description {
           color: #666;
           margin: 0;
-          font-size: 0.85rem;
-          line-height: 1.3;
+          font-size: 0.75rem;
+          line-height: 1.2;
         }
         
         .price {
           font-weight: bold;
           color: #2c5282;
           margin: 0;
-          font-size: 0.95rem;
+          font-size: 0.85rem;
           white-space: nowrap;
         }
         
         .dietary-info {
           display: flex;
-          gap: 0.25rem;
+          gap: 0.15rem;
           flex-wrap: wrap;
         }
         
         .tag {
-          padding: 0.15rem 0.4rem;
-          border-radius: 4px;
-          font-size: 0.65rem;
+          padding: 0.1rem 0.25rem;
+          border-radius: 3px;
+          font-size: 0.6rem;
           font-weight: 600;
           display: inline-block;
           white-space: nowrap;
@@ -181,22 +182,22 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-top: 0.25rem;
-          padding-top: 0.25rem;
+          margin-top: 0.15rem;
+          padding-top: 0.15rem;
           border-top: 1px solid #eee;
         }
 
         .store-name {
-          font-size: 0.8rem;
+          font-size: 0.7rem;
           color: #666;
         }
 
         .buy-button {
           background: #2c5282;
           color: white;
-          padding: 0.35rem 0.75rem;
-          border-radius: 4px;
-          font-size: 0.8rem;
+          padding: 0.25rem 0.5rem;
+          border-radius: 3px;
+          font-size: 0.7rem;
           text-decoration: none;
           transition: background-color 0.2s;
         }
@@ -207,16 +208,16 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
         
         .admin-controls {
           display: flex;
-          gap: 0.5rem;
-          margin-top: 0.25rem;
+          gap: 0.25rem;
+          margin-top: 0.15rem;
         }
         
         button {
-          padding: 0.35rem 0.5rem;
+          padding: 0.25rem 0.4rem;
           border: none;
-          border-radius: 4px;
+          border-radius: 3px;
           cursor: pointer;
-          font-size: 0.8rem;
+          font-size: 0.7rem;
           flex: 1;
         }
         
@@ -250,10 +251,11 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           transform: translate(-50%, -50%) rotate(-45deg);
           background: rgba(244, 67, 54, 0.9);
           color: white;
-          padding: 0.5rem 2rem;
+          padding: 0.25rem 1rem;
           font-weight: bold;
           text-transform: uppercase;
-          letter-spacing: 2px;
+          letter-spacing: 1px;
+          font-size: 0.7rem;
         }
       `}</style>
     </div>
