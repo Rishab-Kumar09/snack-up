@@ -99,12 +99,33 @@ const AdminDashboard = () => {
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (!response.ok) throw new Error('Failed to update order status');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update order status');
+      }
       
-      // Refresh orders after status update
-      fetchData();
+      const data = await response.json();
+      
+      // Update the order status in the local state
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.order_id === orderId 
+            ? { ...order, status: data.status }
+            : order
+        )
+      );
+
+      setError('');
     } catch (err) {
       setError(err.message);
+      // Revert the select value to the previous status
+      const order = orders.find(o => o.order_id === orderId);
+      if (order) {
+        const select = document.querySelector(`select[data-order-id="${orderId}"]`);
+        if (select) {
+          select.value = order.status;
+        }
+      }
     }
   };
 
@@ -531,6 +552,7 @@ const AdminDashboard = () => {
                         <select
                           className="status-select"
                           value={order.status}
+                          data-order-id={order.order_id}
                           onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
                         >
                           <option value="pending">Pending</option>
@@ -618,6 +640,7 @@ const AdminDashboard = () => {
                       <select
                         className="status-select"
                         value={order.status}
+                        data-order-id={order.order_id}
                         onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
                       >
                         <option value="pending">Pending</option>
@@ -672,6 +695,7 @@ const AdminDashboard = () => {
                       <select
                         className="status-select"
                         value={order.status}
+                        data-order-id={order.order_id}
                         onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
                       >
                         <option value="pending">Pending</option>
