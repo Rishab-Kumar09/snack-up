@@ -356,4 +356,27 @@ router.get('/tracking/current-week', async (req, res) => {
   }
 });
 
+// Delete a single inventory tracking record
+router.delete('/tracking/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { error } = await supabase
+      .from('snack_inventory_tracking')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
+
+    res.json({
+      message: "Inventory tracking record deleted successfully"
+    });
+  } catch (error) {
+    console.error('Error deleting tracking record:', error);
+    res.status(500).json({ error: 'Failed to delete tracking record' });
+  }
+});
+
 module.exports = router; 
