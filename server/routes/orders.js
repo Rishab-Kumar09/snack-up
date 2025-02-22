@@ -91,7 +91,7 @@ router.get('/user/:userId', async (req, res) => {
 
     // Format orders for response
     const formattedOrders = orders.map(order => ({
-      id: order.id,
+      order_id: order.id,
       status: order.status,
       total_cost: order.total_cost,
       created_at: order.created_at,

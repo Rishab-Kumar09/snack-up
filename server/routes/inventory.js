@@ -19,7 +19,7 @@ router.get('/tracking', async (req, res) => {
       throw error;
     }
 
-    // Format response .
+    // Format response
     const formattedTracking = tracking.map(record => ({
       ...record,
       snack_name: record.snacks.name
