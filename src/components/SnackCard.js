@@ -1,4 +1,5 @@
 import React from 'react';
+import { getStoreName } from '../utils/storeDetection';
 
 const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) => {
   const {
@@ -11,7 +12,9 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
     isDairyFree,
     isVegetarian,
     isVegan,
-    image_data
+    image_data,
+    store_url,
+    detected_store
   } = snack;
 
   const handleDelete = () => {
@@ -48,6 +51,14 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           {isVegan && <span className="tag vegan">Vegan</span>}
           {!isVegetarian && <span className="tag non-veg">Non-Veg</span>}
         </div>
+        {store_url && (
+          <div className="store-info">
+            <span className="store-name">{getStoreName(detected_store)}</span>
+            <a href={store_url} target="_blank" rel="noopener noreferrer" className="buy-button">
+              Buy Now
+            </a>
+          </div>
+        )}
         {isAdmin && (
           <div className="admin-controls">
             <button onClick={(e) => onEdit(snack, e)} className="edit-button">
@@ -164,6 +175,34 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
         .non-veg {
           background: #FFEBEE;
           color: #C62828;
+        }
+
+        .store-info {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 0.25rem;
+          padding-top: 0.25rem;
+          border-top: 1px solid #eee;
+        }
+
+        .store-name {
+          font-size: 0.8rem;
+          color: #666;
+        }
+
+        .buy-button {
+          background: #2c5282;
+          color: white;
+          padding: 0.35rem 0.75rem;
+          border-radius: 4px;
+          font-size: 0.8rem;
+          text-decoration: none;
+          transition: background-color 0.2s;
+        }
+
+        .buy-button:hover {
+          background: #1a365d;
         }
         
         .admin-controls {

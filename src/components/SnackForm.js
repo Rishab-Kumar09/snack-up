@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ImageUpload from './ImageUpload';
+import { detectStoreFromUrl } from '../utils/storeDetection';
 
-const SnackForm = ({ onSubmit, initialData = {} }) => {
+const SnackForm = ({ onSubmit, initialData = null }) => {
   const [formData, setFormData] = useState({
-    name: initialData.name || '',
-    description: initialData.description || '',
-    price: initialData.price || '',
-    ingredients: initialData.ingredients || '',
-    image_data: initialData.image_data || null
+    name: '',
+    description: '',
+    price: '',
+    ingredients: '',
+    image_data: null,
+    store_url: '',
+    detected_store: null
   });
 
   const [boxCalculator, setBoxCalculator] = useState({
@@ -15,12 +18,36 @@ const SnackForm = ({ onSubmit, initialData = {} }) => {
     unitCount: ''
   });
 
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || '',
+        description: initialData.description || '',
+        price: initialData.price || '',
+        ingredients: initialData.ingredients || '',
+        image_data: initialData.image_data || null,
+        store_url: initialData.store_url || '',
+        detected_store: initialData.detected_store || null
+      });
+    }
+  }, [initialData]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'store_url') {
+      const detectedStore = detectStoreFromUrl(value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        detected_store: detectedStore
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleBoxCalculatorChange = (e) => {
@@ -54,20 +81,6 @@ const SnackForm = ({ onSubmit, initialData = {} }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-    
-    if (!initialData.id) {
-      setFormData({
-        name: '',
-        description: '',
-        price: '',
-        ingredients: '',
-        image_data: null
-      });
-      setBoxCalculator({
-        boxCost: '',
-        unitCount: ''
-      });
-    }
   };
 
   return (
@@ -160,6 +173,18 @@ const SnackForm = ({ onSubmit, initialData = {} }) => {
       </div>
 
       <div className="form-group">
+        <label htmlFor="store_url">Store URL:</label>
+        <input
+          type="url"
+          id="store_url"
+          name="store_url"
+          value={formData.store_url}
+          onChange={handleChange}
+          placeholder="https://store.com/product"
+        />
+      </div>
+
+      <div className="form-group">
         <label>Snack Image:</label>
         <ImageUpload
           currentImage={formData.image_data}
@@ -168,7 +193,7 @@ const SnackForm = ({ onSubmit, initialData = {} }) => {
       </div>
 
       <button type="submit" className="submit-button">
-        {initialData.id ? 'Update Snack' : 'Add Snack'}
+        {initialData ? 'Update Snack' : 'Add Snack'}
       </button>
 
       <style jsx>{`

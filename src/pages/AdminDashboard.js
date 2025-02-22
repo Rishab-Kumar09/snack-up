@@ -215,7 +215,9 @@ const AdminDashboard = () => {
       description: snack.description,
       price: snack.price,
       ingredients: snack.ingredients,
-      image_data: snack.image_data
+      image_data: snack.image_data,
+      store_url: snack.store_url,
+      detected_store: snack.detected_store
     });
     setSelectedSnack(snack);
   };

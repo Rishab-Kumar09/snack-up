@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
 
 // Add new snack
 router.post('/', async (req, res) => {
-  const { name, description, price, ingredients, image_data } = req.body;
+  const { name, description, price, ingredients, image_data, store_url, detected_store } = req.body;
 
   if (!name || !description || !price || !ingredients) {
     return res.status(400).json({ error: 'All fields are required' });
@@ -74,11 +74,25 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Invalid image format. Must be a base64 encoded image.' });
   }
 
+  // Validate store URL if provided
+  if (store_url && !store_url.startsWith('http')) {
+    return res.status(400).json({ error: 'Invalid store URL format' });
+  }
+
   try {
     const { data, error } = await supabase
       .from('snacks')
       .insert([
-        { name, description, price: numericPrice, ingredients, is_available: 1, image_data: image_data || null }
+        { 
+          name, 
+          description, 
+          price: numericPrice, 
+          ingredients, 
+          is_available: true, 
+          image_data: image_data || null,
+          store_url: store_url || null,
+          detected_store: detected_store || null
+        }
       ])
       .select()
       .single();
@@ -156,10 +170,10 @@ router.put('/:id/availability', async (req, res) => {
   res.json({ message: 'Snack availability updated successfully', snack: data });
 });
 
-// Add new endpoint for updating snack details
+// Update snack details
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, ingredients, image_data } = req.body;
+  const { name, description, price, ingredients, image_data, store_url, detected_store } = req.body;
 
   if (!name || !description || !price || !ingredients) {
     return res.status(400).json({ error: 'All fields are required' });
@@ -176,13 +190,20 @@ router.put('/:id', async (req, res) => {
     return res.status(400).json({ error: 'Invalid image format. Must be a base64 encoded image.' });
   }
 
+  // Validate store URL if provided and not empty
+  if (store_url && !store_url.startsWith('http')) {
+    return res.status(400).json({ error: 'Invalid store URL format' });
+  }
+
   try {
     const updateData = { 
       name, 
       description, 
       price: numericPrice, 
       ingredients,
-      image_data: image_data === undefined ? undefined : image_data
+      image_data: image_data === undefined ? undefined : image_data,
+      store_url: store_url === undefined ? undefined : store_url,
+      detected_store: detected_store === undefined ? undefined : detected_store
     };
 
     const { data, error } = await supabase

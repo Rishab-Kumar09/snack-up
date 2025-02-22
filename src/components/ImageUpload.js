@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const ImageUpload = ({ currentImage, onImageChange }) => {
-  const [previewUrl, setPreviewUrl] = useState(currentImage || '');
+  const [previewUrl, setPreviewUrl] = useState('');
+
+  useEffect(() => {
+    // Set the preview URL when currentImage prop changes
+    if (currentImage) {
+      setPreviewUrl(currentImage);
+    }
+  }, [currentImage]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -31,7 +38,28 @@ const ImageUpload = ({ currentImage, onImageChange }) => {
       <div className="image-preview">
         <div className={`preview-wrapper ${previewUrl ? 'has-image' : ''}`}>
           {previewUrl ? (
-            <img src={previewUrl} alt="Snack preview" className="preview-image" />
+            <>
+              <img src={previewUrl} alt="Snack preview" className="preview-image" />
+              <div className="image-controls">
+                <label className="upload-label" htmlFor="image-input-change">
+                  <span>Change Image</span>
+                  <input
+                    id="image-input-change"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden-input"
+                  />
+                </label>
+                <button 
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="remove-image-btn"
+                >
+                  Remove
+                </button>
+              </div>
+            </>
           ) : (
             <label className="upload-placeholder" htmlFor="image-input">
               <span>Click to upload image</span>
@@ -44,27 +72,6 @@ const ImageUpload = ({ currentImage, onImageChange }) => {
               />
             </label>
           )}
-          <div className="image-controls">
-            <label className="upload-label" htmlFor="image-input-change">
-              <span>{previewUrl ? 'Change Image' : 'Upload Image'}</span>
-              <input
-                id="image-input-change"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden-input"
-              />
-            </label>
-            {previewUrl && (
-              <button 
-                type="button"
-                onClick={handleRemoveImage}
-                className="remove-image-btn"
-              >
-                Remove
-              </button>
-            )}
-          </div>
         </div>
       </div>
       <style jsx>{`
