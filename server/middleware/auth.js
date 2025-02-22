@@ -8,8 +8,12 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ error: 'No authorization header' });
     }
 
-    const userId = authHeader.split(' ')[1];
-    if (!userId) {
+    // Extract the token from the Bearer format
+    const token = authHeader.startsWith('Bearer ') 
+      ? authHeader.slice(7) // Remove 'Bearer ' prefix
+      : authHeader;
+
+    if (!token) {
       return res.status(401).json({ error: 'No user ID provided' });
     }
 
@@ -17,7 +21,7 @@ const authMiddleware = async (req, res, next) => {
     const { data: user, error } = await supabase
       .from('users')
       .select('id, name, email, is_admin, company_id')
-      .eq('id', userId)
+      .eq('id', token)
       .single();
 
     if (error || !user) {

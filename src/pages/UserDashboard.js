@@ -21,23 +21,12 @@ const UserDashboard = () => {
   const fetchData = async () => {
     try {
       console.log('Fetching data for user:', user.id);
-      const [snacksResponse, preferencesResponse, ordersResponse] = await Promise.all([
-        fetch(`${config.apiBaseUrl}/snacks`),
-        fetch(`${config.apiBaseUrl}/preferences/user/${user.id}`),
-        fetch(`${config.apiBaseUrl}/orders/user/${user.id}`)
-      ]);
-
-      if (!snacksResponse.ok) throw new Error('Failed to fetch snacks');
-      if (!preferencesResponse.ok) throw new Error('Failed to fetch preferences');
-      if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
-
       const [snacksData, preferencesData, ordersData] = await Promise.all([
-        snacksResponse.json(),
-        preferencesResponse.json(),
-        ordersResponse.json()
+        fetchWithAuth('/snacks'),
+        fetchWithAuth(`/preferences/user/${user.id}`),
+        fetchWithAuth(`/orders/user/${user.id}`)
       ]);
 
-      console.log('Received orders data:', ordersData);
       setSnacks(snacksData);
       setOrders(ordersData);
       
