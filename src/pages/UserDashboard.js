@@ -20,7 +20,6 @@ const UserDashboard = () => {
 
   const fetchData = async () => {
     try {
-      console.log('Fetching data for user:', user);
       const [snacksResponse, preferencesResponse, ordersResponse] = await Promise.all([
         fetch(`${config.apiBaseUrl}/snacks`),
         fetch(`${config.apiBaseUrl}/preferences/user/${user.id}`),
@@ -37,8 +36,6 @@ const UserDashboard = () => {
         ordersResponse.json()
       ]);
 
-      console.log('Orders data received:', ordersData);
-      
       setSnacks(snacksData);
       setOrders(ordersData);
       
@@ -52,7 +49,6 @@ const UserDashboard = () => {
       });
       setPreferences(prefsObj);
     } catch (err) {
-      console.error('Error in fetchData:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -240,7 +236,7 @@ const UserDashboard = () => {
           <h2>My Order History</h2>
           <div className="orders-grid">
             {orders.map(order => (
-              <div key={order.order_id} className="order-card">
+              <div key={order.id} className="order-card">
                 <div className="order-header">
                   <span className={`status-badge ${order.status}`}>
                     {order.status.replace(/_/g, ' ')}
@@ -248,13 +244,14 @@ const UserDashboard = () => {
                 </div>
                 <div className="order-details">
                   <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                  <p>Total Cost: ${parseFloat(order.total_cost).toFixed(2)}</p>
                 </div>
                 <div className="order-items">
                   <h4>Items</h4>
                   <ul>
-                    {order.items.map((item, index) => (
+                    {order.items?.map((item, index) => (
                       <li key={index}>
-                        {item.quantity}x {item.snack_name}
+                        {item.quantity}x {item.snack_name || item.name}
                       </li>
                     ))}
                   </ul>
