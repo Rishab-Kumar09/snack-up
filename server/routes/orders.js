@@ -175,16 +175,80 @@ router.put('/:orderId/status', async (req, res) => {
   }
 
   try {
-    const { error } = await supabase
+    // Start a transaction
+    const { data: order, error: orderError } = await supabase
       .from('orders')
       .update({ 
         status,
         has_been_delivered: status === 'delivered'
       })
-      .eq('id', orderId);
+      .eq('id', orderId)
+      .select('*, order_items(*)')
+      .single();
 
-    if (error) {
-      throw error;
+    if (orderError) {
+      throw orderError;
+    }
+
+    // If the order is being marked as delivered, update inventory tracking
+    if (status === 'delivered') {
+      // Get the current week's start date
+      const now = new Date();
+      const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+      weekStart.setHours(0, 0, 0, 0);
+
+      // Group items by snack_id and sum quantities
+      const snackQuantities = order.order_items.reduce((acc, item) => {
+        if (!acc[item.snack_id]) {
+          acc[item.snack_id] = 0;
+        }
+        acc[item.snack_id] += item.quantity;
+        return acc;
+      }, {});
+
+      // For each snack in the order
+      for (const [snackId, quantity] of Object.entries(snackQuantities)) {
+        // Check if a tracking record exists for this week
+        const { data: existingRecord, error: trackingError } = await supabase
+          .from('snack_inventory_tracking')
+          .select('*')
+          .eq('snack_id', snackId)
+          .eq('week_start_date', weekStart.toISOString().split('T')[0])
+          .single();
+
+        if (trackingError && trackingError.code !== 'PGRST116') { // PGRST116 means no rows returned
+          throw trackingError;
+        }
+
+        if (existingRecord) {
+          // Update existing record
+          const { error: updateError } = await supabase
+            .from('snack_inventory_tracking')
+            .update({
+              initial_quantity: existingRecord.initial_quantity + quantity
+            })
+            .eq('id', existingRecord.id);
+
+          if (updateError) {
+            throw updateError;
+          }
+        } else {
+          // Create new record
+          const { error: insertError } = await supabase
+            .from('snack_inventory_tracking')
+            .insert({
+              snack_id: snackId,
+              week_start_date: weekStart.toISOString().split('T')[0],
+              initial_quantity: quantity,
+              wasted_quantity: 0,
+              shortage_quantity: 0
+            });
+
+          if (insertError) {
+            throw insertError;
+          }
+        }
+      }
     }
 
     res.json({ message: 'Order status updated successfully' });
