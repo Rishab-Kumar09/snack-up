@@ -123,13 +123,13 @@ const SnackCard = ({
           margin: 0.5rem;
           background: white;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          width: 200px;
+          width: 280px;
           display: flex;
           flex-direction: column;
         }
         
         .image-container {
-          height: 120px;
+          height: 160px;
           overflow: hidden;
           background: #f5f5f5;
         }
