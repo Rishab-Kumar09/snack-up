@@ -29,31 +29,43 @@ const ImageUpload = ({ currentImage, onImageChange }) => {
   return (
     <div className="image-upload-container">
       <div className="image-preview">
-        {previewUrl ? (
-          <div className="preview-wrapper">
+        <div className={`preview-wrapper ${previewUrl ? 'has-image' : ''}`}>
+          {previewUrl ? (
             <img src={previewUrl} alt="Snack preview" className="preview-image" />
-            <button 
-              type="button"
-              onClick={handleRemoveImage}
-              className="remove-image-btn"
-            >
-              Remove Image
-            </button>
-          </div>
-        ) : (
-          <div className="upload-placeholder">
-            <label htmlFor="image-upload" className="upload-label">
+          ) : (
+            <label className="upload-placeholder" htmlFor="image-input">
               <span>Click to upload image</span>
               <input
-                id="image-upload"
+                id="image-input"
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
                 className="hidden-input"
               />
             </label>
+          )}
+          <div className="image-controls">
+            <label className="upload-label" htmlFor="image-input-change">
+              <span>{previewUrl ? 'Change Image' : 'Upload Image'}</span>
+              <input
+                id="image-input-change"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden-input"
+              />
+            </label>
+            {previewUrl && (
+              <button 
+                type="button"
+                onClick={handleRemoveImage}
+                className="remove-image-btn"
+              >
+                Remove
+              </button>
+            )}
           </div>
-        )}
+        </div>
       </div>
       <style jsx>{`
         .image-upload-container {
@@ -70,6 +82,11 @@ const ImageUpload = ({ currentImage, onImageChange }) => {
           position: relative;
           width: 100%;
           height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+        .preview-wrapper.has-image:hover .image-controls {
+          opacity: 1;
         }
         .preview-image {
           width: 100%;
@@ -82,30 +99,62 @@ const ImageUpload = ({ currentImage, onImageChange }) => {
           display: flex;
           align-items: center;
           justify-content: center;
+          color: #666;
+          background: #f8f9fa;
           cursor: pointer;
+          transition: background-color 0.2s;
+          text-align: center;
+          font-size: 1rem;
+          padding: 1rem;
+        }
+        .upload-placeholder span {
+          display: block;
+          width: 100%;
+        }
+        .upload-placeholder:hover {
+          background: #e9ecef;
+        }
+        .image-controls {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          padding: 10px;
+          background: rgba(0, 0, 0, 0.7);
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+        .preview-wrapper:not(.has-image) .image-controls {
+          display: none;
         }
         .upload-label {
-          text-align: center;
+          padding: 5px 10px;
+          background: var(--primary-color);
+          color: white;
+          border-radius: 4px;
           cursor: pointer;
-          color: #666;
+          font-size: 0.9rem;
+        }
+        .upload-label:hover {
+          background: var(--primary-color-dark);
         }
         .hidden-input {
           display: none;
         }
         .remove-image-btn {
-          position: absolute;
-          bottom: 10px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(255, 0, 0, 0.8);
+          padding: 5px 10px;
+          background: #dc3545;
           color: white;
           border: none;
-          padding: 5px 10px;
           border-radius: 4px;
           cursor: pointer;
+          font-size: 0.9rem;
         }
         .remove-image-btn:hover {
-          background: rgba(255, 0, 0, 1);
+          background: #c82333;
         }
       `}</style>
     </div>

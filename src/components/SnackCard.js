@@ -20,6 +20,13 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
     }
   };
 
+  const truncateText = (text, maxLength) => {
+    if (text?.length > maxLength) {
+      return `${text.substring(0, maxLength)}...`;
+    }
+    return text;
+  };
+
   return (
     <div className={`snack-card ${!is_available ? 'unavailable' : ''}`}>
       <div className="image-container">
@@ -30,17 +37,16 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
         )}
       </div>
       <div className="content">
-        <h3>{name}</h3>
-        <p className="description">{description}</p>
-        <p className="price">${parseFloat(price).toFixed(2)}</p>
-        <p className="ingredients">
-          <strong>Ingredients:</strong> {ingredients}
-        </p>
+        <div className="header">
+          <h3>{truncateText(name, 25)}</h3>
+          <p className="price">${parseFloat(price).toFixed(2)}</p>
+        </div>
+        <p className="description">{truncateText(description, 60)}</p>
         <div className="dietary-info">
           {isDairyFree && <span className="tag dairy-free">Dairy Free</span>}
           {isVegetarian && !isVegan && <span className="tag vegetarian">Vegetarian</span>}
           {isVegan && <span className="tag vegan">Vegan</span>}
-          {!isVegetarian && <span className="tag non-veg">Non-Vegetarian</span>}
+          {!isVegetarian && <span className="tag non-veg">Non-Veg</span>}
         </div>
         {isAdmin && (
           <div className="admin-controls">
@@ -59,16 +65,16 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
           border: 1px solid #ddd;
           border-radius: 8px;
           overflow: hidden;
-          margin: 1rem;
+          margin: 0.75rem;
           background: white;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          width: 300px;
+          width: 280px;
           display: flex;
           flex-direction: column;
         }
         
         .image-container {
-          height: 200px;
+          height: 160px;
           overflow: hidden;
           background: #f5f5f5;
         }
@@ -90,45 +96,54 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
         }
         
         .content {
-          padding: 1rem;
+          padding: 0.75rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.4rem;
+        }
+
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 0.5rem;
         }
         
         h3 {
-          margin: 0 0 0.5rem 0;
+          margin: 0;
           color: #333;
+          font-size: 1.1rem;
+          flex: 1;
         }
         
         .description {
           color: #666;
-          margin-bottom: 0.5rem;
+          margin: 0;
+          font-size: 0.85rem;
+          line-height: 1.3;
         }
         
         .price {
           font-weight: bold;
           color: #2c5282;
-          margin-bottom: 0.5rem;
-        }
-        
-        .ingredients {
-          font-size: 0.9rem;
-          color: #444;
-          margin-bottom: 0.5rem;
+          margin: 0;
+          font-size: 0.95rem;
+          white-space: nowrap;
         }
         
         .dietary-info {
           display: flex;
-          gap: 0.5rem;
+          gap: 0.25rem;
           flex-wrap: wrap;
-          margin-bottom: 1rem;
         }
         
         .tag {
-          padding: 0.25rem 0.5rem;
+          padding: 0.15rem 0.4rem;
           border-radius: 4px;
-          font-size: 0.8rem;
-          font-weight: 500;
-          margin-right: 0.5rem;
+          font-size: 0.65rem;
+          font-weight: 600;
           display: inline-block;
+          white-space: nowrap;
         }
         
         .dairy-free {
@@ -154,15 +169,15 @@ const SnackCard = ({ snack, onEdit, onDelete, onToggleAvailability, isAdmin }) =
         .admin-controls {
           display: flex;
           gap: 0.5rem;
-          margin-top: 1rem;
+          margin-top: 0.25rem;
         }
         
         button {
-          padding: 0.5rem 1rem;
+          padding: 0.35rem 0.5rem;
           border: none;
           border-radius: 4px;
           cursor: pointer;
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           flex: 1;
         }
         
