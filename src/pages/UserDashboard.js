@@ -57,9 +57,9 @@ const UserDashboard = () => {
     }
   };
 
-  const handlePreferenceUpdate = async (snackId, rating, dailyQuantity) => {
+  const handlePreferenceUpdate = async (snackId, dailyQuantity) => {
     try {
-      // Convert values to numbers and handle invalid inputs
+      // Convert value to number and handle invalid inputs
       const numericQuantity = Number(dailyQuantity);
 
       // Validate the quantity
@@ -72,19 +72,11 @@ const UserDashboard = () => {
         throw new Error('Daily quantity cannot be negative');
       }
 
-      // Only include rating in the request if it's being updated (not 0)
       const requestBody = {
         userId: user.id,
         snackId,
         dailyQuantity: numericQuantity
       };
-
-      if (rating > 0) {
-        if (rating < 1 || rating > 5) {
-          throw new Error('Rating must be between 1 and 5');
-        }
-        requestBody.rating = rating;
-      }
 
       const response = await fetch(`${config.apiBaseUrl}/preferences`, {
         method: 'POST',
@@ -102,7 +94,6 @@ const UserDashboard = () => {
       setPreferences(prev => ({
         ...prev,
         [snackId]: { 
-          rating: rating > 0 ? rating : (prev[snackId]?.rating || 0),
           dailyQuantity: numericQuantity 
         }
       }));
@@ -122,7 +113,6 @@ const UserDashboard = () => {
             className={`star-button ${star <= currentRating ? 'active' : ''}`}
             onClick={() => handlePreferenceUpdate(
               snackId,
-              star,
               preferences[snackId]?.dailyQuantity || 0
             )}
           >
@@ -173,14 +163,7 @@ const UserDashboard = () => {
   };
 
   const handleUpdatePreference = (snackId, quantity) => {
-    const updatedPreferences = {
-      ...preferences,
-      [snackId]: {
-        ...preferences[snackId],
-        dailyQuantity: parseInt(quantity) || 0
-      }
-    };
-    setPreferences(updatedPreferences);
+    handlePreferenceUpdate(snackId, quantity);
   };
 
   const closeModal = () => {
