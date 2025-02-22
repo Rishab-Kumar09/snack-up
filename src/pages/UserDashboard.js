@@ -18,6 +18,33 @@ const UserDashboard = () => {
     fetchData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Add polling for orders when orders tab is active
+  useEffect(() => {
+    let intervalId;
+    if (activeTab === 'orders') {
+      // Initial fetch
+      fetchOrders();
+      // Set up polling every 5 seconds
+      intervalId = setInterval(fetchOrders, 5000);
+    }
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchOrders = async () => {
+    try {
+      const ordersResponse = await fetch(`${config.apiBaseUrl}/orders/user/${user.id}`);
+      if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
+      const ordersData = await ordersResponse.json();
+      setOrders(ordersData);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+    }
+  };
+
   const fetchData = async () => {
     try {
       const [snacksResponse, preferencesResponse, ordersResponse] = await Promise.all([
