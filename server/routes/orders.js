@@ -263,24 +263,81 @@ router.delete('/:orderId', async (req, res) => {
   const { orderId } = req.params;
 
   try {
-    // Delete order items first (cascade should handle this, but being explicit)
-    const { error: itemsError } = await supabase
+    // First get the order details and check if it was delivered
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('id', orderId)
+      .single();
+
+    if (orderError) {
+      throw orderError;
+    }
+
+    // If the order was delivered, we need to update inventory tracking
+    if (order.has_been_delivered) {
+      // Get the current week's start date
+      const now = new Date();
+      const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+      weekStart.setHours(0, 0, 0, 0);
+
+      // Group items by snack_id and sum quantities
+      const snackQuantities = order.order_items.reduce((acc, item) => {
+        if (!acc[item.snack_id]) {
+          acc[item.snack_id] = 0;
+        }
+        acc[item.snack_id] += item.quantity;
+        return acc;
+      }, {});
+
+      // For each snack in the order
+      for (const [snackId, quantity] of Object.entries(snackQuantities)) {
+        // Get the tracking record for this week
+        const { data: trackingRecord, error: trackingError } = await supabase
+          .from('snack_inventory_tracking')
+          .select('*')
+          .eq('snack_id', snackId)
+          .eq('week_start_date', weekStart.toISOString().split('T')[0])
+          .single();
+
+        if (trackingError && trackingError.code !== 'PGRST116') {
+          throw trackingError;
+        }
+
+        if (trackingRecord) {
+          // Subtract the quantity from the tracking record
+          const { error: updateError } = await supabase
+            .from('snack_inventory_tracking')
+            .update({
+              initial_quantity: Math.max(0, trackingRecord.initial_quantity - quantity) // Ensure we don't go below 0
+            })
+            .eq('id', trackingRecord.id);
+
+          if (updateError) {
+            throw updateError;
+          }
+        }
+      }
+    }
+
+    // Delete the order items first (due to foreign key constraint)
+    const { error: itemsDeleteError } = await supabase
       .from('order_items')
       .delete()
       .eq('order_id', orderId);
 
-    if (itemsError) {
-      throw itemsError;
+    if (itemsDeleteError) {
+      throw itemsDeleteError;
     }
 
-    // Delete order
-    const { error: orderError } = await supabase
+    // Then delete the order
+    const { error: orderDeleteError } = await supabase
       .from('orders')
       .delete()
       .eq('id', orderId);
 
-    if (orderError) {
-      throw orderError;
+    if (orderDeleteError) {
+      throw orderDeleteError;
     }
 
     res.json({ message: 'Order deleted successfully' });
