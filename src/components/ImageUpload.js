@@ -10,21 +10,64 @@ const ImageUpload = ({ currentImage, onImageChange }) => {
     }
   }, [currentImage]);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert('Image size must be less than 5MB');
-        return;
-      }
-
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result;
-        setPreviewUrl(base64String);
-        onImageChange(base64String);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          
+          // Calculate new dimensions (max width/height of 800px)
+          let width = img.width;
+          let height = img.height;
+          const maxSize = 800;
+          
+          if (width > height && width > maxSize) {
+            height *= maxSize / width;
+            width = maxSize;
+          } else if (height > maxSize) {
+            width *= maxSize / height;
+            height = maxSize;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG with 0.7 quality (70%)
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(compressedBase64);
+        };
+        img.src = event.target.result;
       };
       reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        // Compress the image
+        const compressedBase64 = await compressImage(file);
+        
+        // Update preview
+        setPreviewUrl(compressedBase64);
+        
+        // Send to parent component
+        onImageChange(compressedBase64);
+        
+        // Log size reduction
+        const originalSize = file.size / 1024 / 1024;
+        const compressedSize = (compressedBase64.length * 0.75) / 1024 / 1024;
+        console.log(`Image size reduced from ${originalSize.toFixed(2)}MB to ${compressedSize.toFixed(2)}MB`);
+      } catch (error) {
+        console.error('Error compressing image:', error);
+        alert('Error processing image. Please try again.');
+      }
     }
   };
 

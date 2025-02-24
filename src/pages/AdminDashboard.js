@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { fetchWithAuth } from '../utils/api';
 import config from '../config';
 import './AdminDashboard.css';
@@ -32,8 +32,18 @@ const AdminDashboard = () => {
   });
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employeeOrders, setEmployeeOrders] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   const user = JSON.parse(localStorage.getItem('user'));
+
+  const paginatedSnacks = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return snacks.slice(startIndex, endIndex);
+  }, [snacks, currentPage]);
+
+  const totalPages = useMemo(() => Math.ceil(snacks.length / itemsPerPage), [snacks]);
 
   useEffect(() => {
     fetchData();
@@ -506,7 +516,7 @@ const AdminDashboard = () => {
           <section className="inventory-section">
             <h2>Current Inventory</h2>
             <div className="inventory-grid">
-              {snacks.map(snack => (
+              {paginatedSnacks.map(snack => (
                 <SnackCard
                   key={snack.id}
                   snack={snack}
@@ -516,6 +526,33 @@ const AdminDashboard = () => {
                   isAdmin={true}
                 />
               ))}
+            </div>
+            <div className="pagination-controls">
+              <button 
+                className="pagination-button" 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              <div className="page-numbers">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                  <button
+                    key={pageNum}
+                    className={`page-number ${pageNum === currentPage ? 'active' : ''}`}
+                    onClick={() => setCurrentPage(pageNum)}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+              <button 
+                className="pagination-button"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
             </div>
           </section>
         </>
