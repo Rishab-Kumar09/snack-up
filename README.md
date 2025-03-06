@@ -1,74 +1,145 @@
 # Snack Up
 
-A modern snack ordering and delivery platform.
+A modern snack ordering and delivery platform for companies to manage their office snack inventory and employee preferences.
 
-# Getting Started with Create React App
+## Features
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+- **User Roles**: Support for employees, company admins, and super admins
+- **Snack Management**: Add, edit, and track snack inventory
+- **Preference System**: Employees can set their snack preferences and daily quantities
+- **Order Management**: Track and manage snack orders and deliveries
+- **Analytics**: View consumption patterns and popular snacks
+- **Dietary Information**: Support for dietary preferences (vegetarian, vegan, dairy-free)
 
-## Available Scripts
+## AI Features
 
-In the project directory, you can run:
+### Smart Recommendations
+- **Personalized Snack Suggestions**: Uses OpenAI to analyze user preferences and dietary restrictions to recommend suitable snacks
+- **Consumption Pattern Analysis**: AI-driven insights into snack popularity and ordering trends
+- **Automated Store Detection**: Intelligent detection of store names from product URLs
 
-### `npm start`
+### Inventory Optimization
+- **Smart Reordering**: AI-powered predictions for optimal reorder timing and quantities
+- **Waste Reduction**: Machine learning algorithms to minimize food waste through precise ordering
+- **Cost Optimization**: Automated suggestions for bulk purchases based on consumption patterns
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Dietary Analysis
+- **Ingredient Classification**: Automatic categorization of snacks into dietary categories (vegan, vegetarian, dairy-free)
+- **Allergen Detection**: AI-assisted identification of potential allergens in snack ingredients
+- **Nutritional Insights**: Smart analysis of nutritional content and healthiness scores
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Technologies
 
-### `npm test`
+### Frontend
+- **React.js** (v18) - Core frontend framework
+- **React Router** (v6) - Client-side routing
+- **Chart.js** & **React-Chartjs-2** - Data visualization
+- **CSS3** - Custom styling with CSS variables for theming
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Backend
+- **Node.js** & **Express.js** - Server framework
+- **Supabase** - Database and authentication
+- **Multer** - File upload handling
+- **Serverless Functions** - Netlify serverless deployment
 
-### `npm run build`
+### Development & Deployment
+- **Create React App** - Development and build tooling
+- **Netlify** - Hosting and deployment
+- **dotenv** - Environment variable management
+- **Concurrently** - Running multiple development servers
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Prerequisites
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Before you begin, ensure you have installed:
+- Node.js (v18 or higher)
+- npm (v9 or higher)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Installation
 
-### `npm run eject`
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/snack-up.git
+cd snack-up
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+2. Install dependencies:
+```bash
+npm install
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+3. Create a `.env` file in the root directory and add your environment variables:
+```env
+REACT_APP_SUPABASE_URL=your_supabase_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+PORT=5000
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Development
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Starting the Development Server
 
-## Learn More
+Run the following command to start both the frontend and backend servers:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+npm run dev
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+This will start:
+- Frontend server on http://localhost:3000
+- Backend server on http://localhost:5000
 
-### Code Splitting
+### Available Scripts
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- `npm start` - Runs the app in development mode
+- `npm test` - Launches the test runner
+- `npm run build` - Builds the app for production
+- `npm run server` - Runs only the backend server
+- `npm run dev` - Runs both frontend and backend servers
 
-### Analyzing the Bundle Size
+## Testing
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Run the test suite with:
 
-### Making a Progressive Web App
+```bash
+npm test
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Building for Production
 
-### Advanced Configuration
+1. Build the application:
+```bash
+npm run build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+2. The build artifacts will be stored in the `build` folder.
 
-### Deployment
+## Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+The application is configured for deployment on Netlify. The `netlify.toml` file contains the necessary deployment configurations.
 
-### `npm run build` fails to minify
+## API Documentation
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The backend API is organized into the following routes:
+
+- `/api/auth` - Authentication endpoints
+- `/api/snacks` - Snack management
+- `/api/preferences` - User preferences
+- `/api/orders` - Order management
+- `/api/companies` - Company management
+- `/api/inventory` - Inventory tracking
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For support, email support@snackup.com or open an issue in the repository.
